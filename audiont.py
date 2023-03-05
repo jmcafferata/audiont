@@ -14,6 +14,9 @@ import config # import the config file // importar el archivo de configuración
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
 openai.api_key = config.openai_api_key
 
+# empty cuda cache // vaciar la caché de cuda
+torch.cuda.empty_cache()
+
 # load the model used to process audio files // cargar el modelo usado para procesar archivos de audio
 whisper_model = whisper.load_model("medium") 
 
@@ -36,7 +39,7 @@ def handle_audio(update, context):
     # transcribe the audio file using Whisper // transcribir el archivo de audio usando Whisper
     transcription_object = whisper_model.transcribe(file_path)
     # print the text extracted from the audio file // imprimir el texto extraído del archivo de audio
-    print(transcription_object["text"])
+    print("Transcription:\n"+transcription_object["text"])
     # reply with the text extracted from the audio file // responder con el texto extraído del archivo de audio
     update.message.reply_text(transcription_object["text"]) 
     
@@ -44,29 +47,27 @@ def handle_audio(update, context):
     summary_gpt_response = openai.Completion.create(
         model="text-davinci-003",
         # The prompt is the text that the model will use to generate a response. I add some things about me so that the model can generate a more personalized response // El prompt es el texto que el modelo usará para generar una respuesta. Agrego algunas cosas sobre mí para que el modelo pueda generar una respuesta más personalizada
-        prompt="Someone just sent me a voice note that said this: \n"+transcription_object["text"] + "\n create a summary from me." + "\n\n about me: \n" + config.about_me,
+        prompt="Someone just sent me a voice note that said this: \n"+transcription_object["text"] + "\n --- END OF VOICE NOTE --- \n Create a summary personalized for me, "+config.my_name + "\n\n About me: \n" + config.about_me,
         # The temperature is a number between 0 and 1 that determines how random the model's response will be // La temperatura es un número entre 0 y 1 que determina qué tan aleatoria será la respuesta del modelo
         temperature=0.7,
         # Tokens is kinda like the number of words the model will use to generate a response // Tokens es como el número de palabras que el modelo usará para generar una respuesta
-        max_tokens=742,
+        max_tokens=2000,
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0
     )
-    # print the response // imprimir la respuesta
-    print(summary_gpt_response)
     # get the text from the response // obtener el texto de la respuesta
     summary_text = (summary_gpt_response.choices[0].text)
     # decode the text // decodificar el texto
-    decoded_reply_text = decode_utf8(summary_text)
+    decoded_summary_text = decode_utf8(summary_text)
     # print the decoded text // imprimir el texto decodificado
-    print(decoded_reply_text)
+    print("Summary:\n"+decoded_summary_text)
     # Send the summary to the user // Enviar el resumen al usuario
-    update.message.reply_text(decoded_reply_text)
+    update.message.reply_text(decoded_summary_text)
     # call the OpenAI API to generate a reply to the voice note // llamar a la API de OpenAI para generar una respuesta a la nota de voz
     reply_gpt_response = openai.Completion.create(
         model="text-davinci-003",
-        prompt="Someone just sent me a voice note that said this: \n"+transcription_object["text"] + "\n create a reply from me." + "\n\n about me: \n" + config.about_me,
+        prompt="Someone just sent me a voice note that said this: \n"+transcription_object["text"] + "\n --- END OF VOICE NOTE --- \n Create a reply from me, "+config.my_name + "\n\n About me: \n" + config.about_me,
         temperature=0.7,
         max_tokens=2000,
         top_p=1,
@@ -75,7 +76,7 @@ def handle_audio(update, context):
     )
     reply_text = (reply_gpt_response.choices[0].text)
     decoded_reply_text = decode_utf8(reply_text)
-    print(decoded_reply_text)
+    print("Reply:\n"+decoded_reply_text)
     update.message.reply_text('Posible respuesta:')
     update.message.reply_text(decoded_reply_text)
 

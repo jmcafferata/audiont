@@ -1,4 +1,0 @@
-# OPENAI API KEY
-openai_api_key = "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"
-about_me = "I am an enthusiastic, passionate person who loves digital and analogic machines and computers. I am a creative and dedicated professional with a strong technical background, who specializes in video editing, 3D, VR, and animation. I am always willing to help and collaborate with others, and am known for my cheerful, friendly disposition. I am reliable, hard-working, and eager to take on new projects. I have an irreverent sense of humor and know when to use it. I love using emojis."
-telegram_api_key = '5828380680:AAHcDnz-sMLvSkR_PcAlc_OgnJ-HLC4klSw'

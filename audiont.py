@@ -5,20 +5,11 @@
 # import the necessary libraries // importar las librerías necesarias
 import os # operating system library that allows us to access the computer's file system // librería del sistema operativo que nos permite acceder al sistema de archivos del computador
 import openai # library used to access the OpenAI API // librería usada para acceder a la API de OpenAI
-import wave # library used to read audio files // librería usada para leer archivos de audio
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters # library used to communicate with the Telegram bot // librería usada para comunicarse con el bot de Telegram
-import whisper # library used to process audio files // librería usada para procesar archivos de audio
-import torch # library used to access the GPU // librería usada para acceder a la GPU
 import config # import the config file // importar el archivo de configuración
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
 openai.api_key = config.openai_api_key
-
-# empty cuda cache // vaciar la caché de cuda
-torch.cuda.empty_cache()
-
-# load the model used to process audio files // cargar el modelo usado para procesar archivos de audio
-whisper_model = whisper.load_model("medium") 
 
 # decoding means converting the bytes (0s and 1s) into a string // la decodificación significa convertir los bytes (0s y 1s) en una cadena de texto
 def decode_utf8(text: bytes) -> str: 
@@ -28,6 +19,19 @@ def decode_utf8(text: bytes) -> str:
     decoded_text = encoded_text.decode('utf-8')
     return decoded_text
 
+# use ffmpeg to convert the audio file to a wav file // usar ffmpeg para convertir el archivo de audio a un archivo wav
+def convert_to_wav(audio_file):
+    # get the name of the audio file // obtener el nombre del archivo de audio
+    audio_file_name = os.path.basename(audio_file)
+    # get the name of the audio file without the extension // obtener el nombre del archivo de audio sin la extensión
+    audio_file_name_without_extension = os.path.splitext(audio_file_name)[0]
+    # create a new file name for the wav file // crear un nuevo nombre de archivo para el archivo wav
+    new_file_name = audio_file_name_without_extension + ".wav"
+    # use ffmpeg to convert the audio file to a wav file // usar ffmpeg para convertir el archivo de audio a un archivo wav
+    os.system("ffmpeg -y -i "+audio_file+" "+new_file_name)
+    # return the new file name // devolver el nuevo nombre de archivo
+    return new_file_name
+
 # main function that handles the audio files // función principal que maneja los archivos de audio
 def handle_audio(update, context):
     # Extract the audio file from the message // Extraer el archivo de audio del mensaje
@@ -36,8 +40,10 @@ def handle_audio(update, context):
     update.message.reply_text('Audio recibido. Esperá un toque que lo proceso. Te voy avisando.') 
     # download the audio file // descargar el archivo de audio
     file_path = audio_file.get_file().download()
-    # transcribe the audio file using Whisper // transcribir el archivo de audio usando Whisper
-    transcription_object = whisper_model.transcribe(file_path)
+    # convert the audio file to a wav file // convertir el archivo de audio a un archivo wav
+    wav_audio = open(convert_to_wav(file_path),"rb")
+    # call the OpenAI API to get the text from the audio file // llamar a la API de OpenAI para obtener el texto del archivo de audio
+    transcription_object = openai.Audio.transcribe("whisper-1", wav_audio,language="es",prompt="esto es una nota de voz. hay momentos de silencio en el audio, cuidado con eso.")
     # print the text extracted from the audio file // imprimir el texto extraído del archivo de audio
     print("Transcription:\n"+transcription_object["text"])
     # reply with the text extracted from the audio file // responder con el texto extraído del archivo de audio
@@ -47,7 +53,7 @@ def handle_audio(update, context):
     summary_gpt_response = openai.Completion.create(
         model="text-davinci-003",
         # The prompt is the text that the model will use to generate a response. I add some things about me so that the model can generate a more personalized response // El prompt es el texto que el modelo usará para generar una respuesta. Agrego algunas cosas sobre mí para que el modelo pueda generar una respuesta más personalizada
-        prompt="Someone just sent me a voice note that said this: \n"+transcription_object["text"] + "\n --- END OF VOICE NOTE --- \n Create a summary personalized for me, "+config.my_name + "\n\n About me: \n" + config.about_me,
+        prompt="Me acaban de enviar una nota de voz que dice lo siguiente: \n"+transcription_object["text"] + "\n --- FIN DE LA NOTA DE VOZ --- \n Crear, en español, un resumen breve de la nota de voz.",
         # The temperature is a number between 0 and 1 that determines how random the model's response will be // La temperatura es un número entre 0 y 1 que determina qué tan aleatoria será la respuesta del modelo
         temperature=0.7,
         # Tokens is kinda like the number of words the model will use to generate a response // Tokens es como el número de palabras que el modelo usará para generar una respuesta
@@ -67,18 +73,26 @@ def handle_audio(update, context):
     # call the OpenAI API to generate a reply to the voice note // llamar a la API de OpenAI para generar una respuesta a la nota de voz
     reply_gpt_response = openai.Completion.create(
         model="text-davinci-003",
-        prompt="Someone just sent me a voice note that said this: \n"+transcription_object["text"] + "\n --- END OF VOICE NOTE --- \n Create a reply from me, "+config.my_name + "\n\n About me: \n" + config.about_me,
+        prompt="Me acaban de enviar una nota de voz que dice lo siguiente: \n"+transcription_object["text"] + "\n --- FIN DE LA NOTA DE VOZ --- \n Crear una respuesta de mi parte, "+config.my_name + "\n\n Sobre mí: \n" + config.about_me_spanish,
         temperature=0.7,
         max_tokens=2000,
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0
     )
+    # get the text from the response // obtener el texto de la respuesta
     reply_text = (reply_gpt_response.choices[0].text)
+    # decode the text // decodificar el texto
     decoded_reply_text = decode_utf8(reply_text)
+    # print the decoded text // imprimir el texto decodificado
     print("Reply:\n"+decoded_reply_text)
+    # Send the reply to the user // Enviar la respuesta al usuario
     update.message.reply_text('Posible respuesta:')
     update.message.reply_text(decoded_reply_text)
+    # delete the audio file // eliminar el archivo de audio
+    os.remove(file_path)
+    #delete the wav file // eliminar el archivo wav
+    os.remove(wav_audio.name)
 
 # updater is used to communicate with the Telegram bot // updater se usa para comunicarse con el bot de Telegram
 updater = Updater(config.telegram_api_key) 
@@ -91,3 +105,4 @@ updater.start_polling()
 
 # keep the code running // mantener el código en ejecución
 updater.idle()
+

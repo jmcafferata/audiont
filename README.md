@@ -17,3 +17,7 @@ Para generar la clave de API de OpenAI
 3. Haga clic en el enlace "Generate API Key" en el menú de la izquierda.
 4. Ingrese su contraseña para confirmar la solicitud de API Key.
 5. Una vez confirmada, su API Key se mostrará en la pantalla.
+
+## Cuidado
+
+Estamos en etapa experimental. En este momento, los audios QUEDAN GUARDADOS EN EL SERVIDOR DONDE CORRE EL BOT.

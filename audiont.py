@@ -44,6 +44,7 @@ def handle_audio(update, context):
     wav_audio = open(convert_to_wav(file_path),"rb")
     # call the OpenAI API to get the text from the audio file // llamar a la API de OpenAI para obtener el texto del archivo de audio
     transcription_object = openai.Audio.transcribe("whisper-1", wav_audio,language="es",prompt="esto es una nota de voz. hay momentos de silencio en el audio, cuidado con eso.")
+    
     # print the text extracted from the audio file // imprimir el texto extraído del archivo de audio
     print("Transcription:\n"+transcription_object["text"])
     # reply with the text extracted from the audio file // responder con el texto extraído del archivo de audio
@@ -91,8 +92,7 @@ def handle_audio(update, context):
     update.message.reply_text(decoded_reply_text)
     # delete the audio file // eliminar el archivo de audio
     os.remove(file_path)
-    #delete the wav file // eliminar el archivo wav
-    os.remove(wav_audio.name)
+
 
 # updater is used to communicate with the Telegram bot // updater se usa para comunicarse con el bot de Telegram
 updater = Updater(config.telegram_api_key) 

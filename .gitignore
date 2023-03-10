@@ -1,2 +1,7 @@
 # .gitignore 
 config.py
+#ignore all audio files
+*.mp3
+*.wav
+*.ogg
+*.opus

@@ -5,3 +5,5 @@ config.py
 *.wav
 *.ogg
 *.opus
+*.oga
+logs.csv

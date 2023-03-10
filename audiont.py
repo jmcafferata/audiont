@@ -58,8 +58,8 @@ async def handle_audio(update, context):
     # reply to the message, telling the user the audio file was received // responder al mensaje, diciendo al usuario que se recibió el archivo de audio
     await update.message.reply_text('Audio recibido. Esperá un toque que lo proceso. Te voy avisando.') 
     
-    # convert the audio file to a wav file // convertir el archivo de audio a un archivo wav
-    wav_audio = open(convert_to_wav(file_path),"rb")
+    new_audio_path = convert_to_wav(file_path)
+    wav_audio = open(new_audio_path,"rb")
     # call the OpenAI API to get the text from the audio file // llamar a la API de OpenAI para obtener el texto del archivo de audio
     transcription_object = openai.Audio.transcribe("whisper-1", wav_audio,language="es",prompt="esto es una nota de voz. hay momentos de silencio en el audio, cuidado con eso.")
     
@@ -108,6 +108,8 @@ async def handle_audio(update, context):
     # Send the reply to the user // Enviar la respuesta al usuario
     await update.message.reply_text('Posible respuesta:')
     await update.message.reply_text(decoded_reply_text)
+    #delete the audio files after 1 day // eliminar los archivos de audio después de 1 día
+    
 
 
 

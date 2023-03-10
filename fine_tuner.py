@@ -1,1 +1,0 @@
-# a fine tuning program for creating my own davinci model // un programa 

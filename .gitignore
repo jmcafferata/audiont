@@ -7,3 +7,4 @@ config.py
 *.opus
 *.oga
 logs.csv
+users

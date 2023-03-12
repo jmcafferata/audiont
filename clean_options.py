@@ -1,13 +1,13 @@
 
 async def clean_options(response):
     # find the text between "\n1. " and "\n2" and add it to the options list // encontrar el texto entre "\n1. " y "\n2" y agregarlo a la lista de opciones
-    options.append(response.split("1. ")[1].split("\n2.")[0])
+    options.append(response.split("1.")[1].split("\n2.")[0])
     # find the text between "\n2. " and "\n3" and add it to the options list // encontrar el texto entre "\n2. " y "\n3" y agregarlo a la lista de opciones
-    options.append(response.split("2. ")[1].split("\n3.")[0])
+    options.append(response.split("2.")[1].split("\n3.")[0])
     # find the text between "\n3. " and "\n4" and add it to the options list // encontrar el texto entre "\n3. " y "\n4" y agregarlo a la lista de opciones
-    options.append(response.split("3. ")[1].split("\n4.")[0])
+    options.append(response.split("3.")[1].split("\n4.")[0])
     # find the text between "\n4. " and "\n5" and add it to the options list // encontrar el texto entre "\n4. " y "\n5" y agregarlo a la lista de opciones
-    options.append(response.split("4. ")[1].split("\n5.")[0])
+    options.append(response.split("4.")[1].split("\n5.")[0])
     
     # delete the numbers from the options // eliminar los números de las opciones
     options[0] = options[0].replace("\\n", "")

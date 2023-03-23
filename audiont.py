@@ -3,8 +3,10 @@
 # Este código se usa para procesar archivos de audio del bot de telegram, obtener el texto del archivo de audio y generar una respuesta automatizada.
 
 # import the necessary libraries // importar las librerías necesarias
-from typing import DefaultDict, Optional, Set # library used to define the types of variables // librería usada para definir los tipos de variables
-from collections import defaultdict # library used to handle dictionaries // librería usada para manejar diccionarios
+# library used to define the types of variables // librería usada para definir los tipos de variables
+from typing import DefaultDict, Optional, Set
+# library used to handle dictionaries // librería usada para manejar diccionarios
+from collections import defaultdict
 from telegram.ext import (
     Application,
     CallbackContext,
@@ -17,29 +19,47 @@ from telegram.ext import (
     MessageHandler,
     filters
 )
-import modules.clean_options as clean  # import the clean_options file // importar el archivo clean_options
+# library used to handle conversations // librería usada para manejar conversaciones
+from telegram.ext import ConversationHandler
+# import the clean_options file // importar el archivo clean_options
+import modules.clean_options as clean
 import re  # library used to handle regular expressions // librería usada para manejar expresiones regulares
-from datetime import datetime # library used to handle dates // librería usada para manejar fechas
-import csv # library used to handle csv files // librería usada para manejar archivos csv
+# library used to handle dates // librería usada para manejar fechas
+from datetime import datetime
+import csv  # library used to handle csv files // librería usada para manejar archivos csv
 import config as config  # import the config file // importar el archivo de configuración
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup # library used to communicate with the Telegram bot // librería usada para comunicarse con el bot de Telegram
-import modules.decode_utf8 # import the decode_utf8 file // importar el archivo decode_utf8
-import modules.convert_to_wav # import the convert_to_wav file // importar el archivo convert_to_wav
-import modules.csv_manipulation as csvm # import the store_to_csv file // importar el archivo store_to_csv
-import modules.ai_functions as ai # import the ai_functions file // importar el archivo ai_functions 
-import modules.subscriptions as subs # import the subscriptions file // importar el archivo subscriptions
+# library used to communicate with the Telegram bot // librería usada para comunicarse con el bot de Telegram
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+# import the decode_utf8 file // importar el archivo decode_utf8
+import modules.decode_utf8
+# import the convert_to_wav file // importar el archivo convert_to_wav
+import modules.convert_to_wav
+# import the store_to_csv file // importar el archivo store_to_csv
+import modules.csv_manipulation as csvm
+# import the ai_functions file // importar el archivo ai_functions
+import modules.ai_functions as ai
+# import the subscriptions file // importar el archivo subscriptions
+import modules.subscriptions as subs
+import pathlib as Path
+
+
+# CONTANTS // CONSTANTES
+
+# define the states of the conversation // definir los estados de la conversación
+ASK_NAME, ASK_DESCRIPTION,ASK_MESSAGES,AWAIT_INSTRUCTIONS,ASK_MORE_MESSAGES = range(5)
 
 # function that handles the audio files // función principal que maneja los archivos de audio
+
 async def handle_audio(update, context):
     # check if username in config.subscribers // verificar si el username está en config.subscribers
     if update.message.from_user.username in config.subscribers:
         # call the transcribe_audio function // llamar a la función transcribe_audio
         transcription = await ai.transcribe_audio(update)
-        csvm.store_to_csv(username=update.message.from_user.username, message=transcription, sender="other")
+        csvm.store_to_csv(username=update.message.from_user.username,
+                          message=transcription, sender="other")
         # reply to the message with the text extracted from the audio file // responder al mensaje con el texto extraído del archivo de audio
         await update.message.reply_text("El audio dice:")
         await update.message.reply_text(transcription)
-        print(update)
         # call the prompt function // llamar a la función prompt
         response = await ai.complete_prompt(reason="summary", transcription=transcription, username=update.message.from_user.username)
         # call the clean_options function // llamar a la función clean_options
@@ -61,6 +81,7 @@ async def handle_audio(update, context):
                 ]
             ]
         ))
+        return AWAIT_INSTRUCTIONS
     else:
         await subs.sendSubscribeMessage(update)
 
@@ -70,68 +91,161 @@ async def handle_voice(update, context):
     if update.message.from_user.username in config.subscribers:
         # call the transcribe_audio function // llamar a la función transcribe_audio
         transcription = await ai.transcribe_audio(update)
-        response = await ai.complete_prompt(reason="instructions", transcription=transcription,username=update.message.from_user.username)
+        response = await ai.complete_prompt(reason="assistance", transcription=transcription, username=update.message.from_user.username)
         await update.message.reply_text(response)
         print("Last audio: "+csvm.get_last_audio(update.message.from_user.username))
     else:
         await subs.sendSubscribeMessage(update)
 
+# function that handles the voice notes when responding to a voice note // función principal que maneja las notas de voz cuando se responde a una nota de voz
+async def respond_audio(update, context):
+    # check if username in config.subscribers // verificar si el username está en config.subscribers
+    if update.message.from_user.username in config.subscribers:
+        # call the transcribe_audio function // llamar a la función transcribe_audio
+        transcription = await ai.transcribe_audio(update)
+        response = await ai.complete_prompt(reason="instructions", transcription=transcription, username=update.message.from_user.username)
+        await update.message.reply_text(response)
+        return ConversationHandler.END
+    else:
+        await subs.sendSubscribeMessage(update)
 
+#++++++++++++++++++++++++++ STEP ONE +++++++++++++++++++++++++++
 # handles when the bot receives a start command // maneja cuando el bot recibe un comando de inicio
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("Starting conversation with user: "+update.message.from_user.username)
+    # create a folder for the user with their username, and inside it, a file called messages.csv // crear una carpeta para el usuario con su username, y dentro de ella, un archivo llamado messages.csv
+    csvm.create_user_folder(update.message.from_user.username)
+    print("Created folder for user: "+update.message.from_user.username)
     await context.bot.send_message(chat_id=update.effective_chat.id, text="😊 Hola! Soy Audion't. Escucho mensajes de audio 🎧 y te ayudo a generar respuestas ✍️. Reenviame un audio o mandame un mensaje de voz!")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Escribí tu nombre 👇")
+    return ASK_NAME
 
-# handles when the bot receives a text message // maneja cuando el bot recibe un mensaje de texto
-async def sendInfo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
+#++++++++++++++++++++++++++ STEP TWO +++++++++++++++++++++++++++
+# handles when the bot receives a name // maneja cuando el bot recibe un nombre
+async def ask_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # get the name from the message // obtener el nombre del mensaje
+    user_name = update.message.text
+    print("User name: "+user_name)
+    # update the users/username/data.json file with the name // actualizar el archivo users/username/data.json con el nombre
+    csvm.create_user_data(update.message.from_user.username, "name", user_name)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Gracias, {}. Ahora decime algo sobre vos (me podés escribir o mandar un audio):".format(user_name))
+    return ASK_DESCRIPTION
+
+#++++++++++++++++++++++++++ STEP THREE +++++++++++++++++++++++++++
+# handles when the bot receives a description // maneja cuando el bot recibe una descripción
+async def get_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # get the description from the message // obtener la descripción del mensaje
+    user_description = update.message.text
+    print("User description: "+user_description)
+    # update the users/username/data.json file with the description // actualizar el archivo users/username/data.json con la descripción
+    csvm.create_user_data(update.message.from_user.username, "description", user_description)
+    response = await ai.complete_prompt(reason="description", transcription=user_description, username=update.message.from_user.username)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Ahora andá a Whatsapp, copiate algunos mensajes tuyos y pegalos acá 👇. Así aprendo a escribir como vos.")
+    return ASK_MESSAGES
+
+# handles when the description is a voice note // maneja cuando la descripción es una nota de voz
+async def get_description_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # call the transcribe_audio function // llamar a la función transcribe_audio
+    transcription = await ai.transcribe_audio(update)
+    print("User description: "+transcription)
+    # update the users/username/data.json file with the description // actualizar el archivo users/username/data.json con la descripción
+    csvm.create_user_data(update.message.from_user.username, "description", transcription)
+    response = await ai.complete_prompt(reason="description", transcription=transcription, username=update.message.from_user.username)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Bien. Ahora andá a Whatsapp, copiate algunos mensajes tuyos y pegalos acá 👇. Así aprendo a escribir como vos.")
+    return ASK_MESSAGES
+
+#++++++++++++++++++++++++++ STEP FOUR +++++++++++++++++++++++++++
+# handles when the bot receives a name // maneja cuando el bot recibe un nombre
+async def save_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("asking messages")
+    user_messages = update.message.text
+    # update the users/username/data.json file with the name // actualizar el archivo users/username/data.json con el nombre
+    csvm.create_user_data(update.message.from_user.username, "messages", user_messages)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Bravo! Ahora considerame un doble tuyo. Reenviame un audio que te hayan mandado y yo te ayudo a contestarlo. ¡Más tiempo libre!")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Cuando quieras que aprenda más cosas, escribime /aprender")
+    return ConversationHandler.END
+
+# handles when the bot receives a name // maneja cuando el bot recibe un nombre
+async def save_new_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_messages = update.message.text
+    # update the users/username/data.json file with the name // actualizar el archivo users/username/data.json con el nombre
+    csvm.update_user_data(update.message.from_user.username, "messages", user_messages)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Messi rve una bocha!")
+    return ConversationHandler.END
+
+
 
 # handles when the bot receives something that is not a command // maneja cuando el bot recibe algo que no es un comando
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="No entiendo ese comando.")
 
 # handles when the bot receives a callback query // maneja cuando el bot recibe una consulta de devolución de llamada
+async def aprender(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Si querés darme datos, andá a WhatsApp, copiá mensajes de texto y pegalos acá 👇.")
+    return ASK_MORE_MESSAGES
+
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    response = await ai.complete_prompt("assistance", text, update.message.from_user.username)
+    await context.bot.send_message(chat_id=update.effective_chat.id,text=response)
+
+
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get the data from the callback query // obtener los datos de la consulta de devolución de llamada
     data = update.callback_query.data
     print("Data: "+clean.options[int(data)])
     # if the data is 1, edit the message to say that the user selected the first option // si los datos son 1, editar el mensaje para decir que el usuario seleccionó la primera opción
     response = await ai.complete_prompt("instructions", clean.options[int(data)], update.callback_query.from_user.username)
-    #send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
+    # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
     await update.callback_query.message.reply_text(response)
     await update.callback_query.message.reply_text("🥲 Si no te gustó la respuesta, podés mandarme una nota de voz con instrucciones 🗣️ o apretar otro botón.")
 
 
 # main function // función principal
 if __name__ == '__main__':
-    
+
     # create the bot // crear el bot
     application = Application.builder().token(config.telegram_api_key).build()
 
-    # add the handlers // agregar los manejadores
-    start_handler = CommandHandler('start', start)
+    # use ai.generate_embeddings(file,column) to turn the column full_text in users/jmcafferata/justTweets.csv into a list of embeddings
+    # print(ai.generate_embeddings("users/jmcafferata/cleandataNoRows.csv","full_text"))
+
+    # for when the bot receives a start command // para cuando el bot recibe un comando de inicio
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start),CommandHandler('aprender', aprender)],
+        states={
+            ASK_NAME: [MessageHandler(filters.TEXT & (~filters.COMMAND), ask_description)],
+            ASK_DESCRIPTION: [MessageHandler(filters.TEXT & (~filters.COMMAND), get_description),MessageHandler(filters.VOICE, get_description_voice)],
+            ASK_MESSAGES: [MessageHandler(filters.TEXT & (~filters.COMMAND), save_messages)],
+            AWAIT_INSTRUCTIONS: [MessageHandler(filters.TEXT & (~filters.COMMAND), respond_audio)],
+            ASK_MORE_MESSAGES: [MessageHandler(filters.TEXT & (~filters.COMMAND), save_new_messages)],
+        },fallbacks=[MessageHandler(filters.COMMAND, unknown)])
+    application.add_handler(conv_handler)
+
+    # for when the bot receives a learn command // para cuando el bot recibe un comando de inicio
+    start_handler = CommandHandler('aprender', aprender)
     application.add_handler(start_handler)
 
-    text_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), sendInfo)
-    application.add_handler(text_handler)
-
+    # for when the bot receives an audio file // para cuando el bot recibe un archivo de audio
     audio_handler = MessageHandler(filters.AUDIO, handle_audio)
     application.add_handler(audio_handler)
 
-    voice_handler = MessageHandler(filters.VOICE, handle_voice)
+    
+    # for when the bot receives a text message // para cuando el bot recibe un archivo de audio
+    text_handler = MessageHandler(filters.TEXT, handle_text)
+    application.add_handler(text_handler)
+
+
+    # for when the bot receives a voice note // para cuando el bot recibe una nota de voz
+    # exclude conversation states // excluir estados de conversación
+    voice_handler = MessageHandler(filters.VOICE & (~filters.COMMAND), handle_voice)
     application.add_handler(voice_handler)
 
     # a callback query handler // un manejador de consulta de devolución de llamada
     callback_handler = CallbackQueryHandler(callback=callback)
     application.add_handler(callback_handler)
 
-    #  add the unknown handler // agregar el manejador desconocido
-    unknown_handler = MessageHandler(filters.COMMAND, unknown)
-    application.add_handler(unknown_handler)
-
     # start the bot // iniciar el bot
     application.run_polling()
-
-
-
-
-

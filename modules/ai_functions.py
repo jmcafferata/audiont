@@ -25,20 +25,39 @@ async def transcribe_audio(update):
     # reply to the message, telling the user the audio file was received // responder al mensaje, diciendo al usuario que se recibió el archivo de audio
     await update.message.reply_text('Audio recibido. Esperá un toque que lo proceso. Te voy avisando.')
     # convert the audio file to a wav file // convertir el archivo de audio a un archivo wav
-    new_audio_path = convert.convert_to_wav(file_path)
-    # open the wav file // abrir el archivo wav
-    wav_audio = open(new_audio_path, "rb")
-    # call the OpenAI API to get the text from the audio file // llamar a la API de OpenAI para obtener el texto del archivo de audio
-    transcription_object = openai.Audio.transcribe(
-        "whisper-1", wav_audio, language="es", prompt="esto es una nota de voz. hay momentos de silencio en el audio, cuidado con eso.")
-    # print the text extracted from the audio file // imprimir el texto extraído del archivo de audio
-    print("Transcription:\n"+transcription_object["text"])
-    # store the transcription as a new line in users/username/messages.csv encoded in UTF-8 // almacenar la transcripción como una nueva línea en users/username/messages.csv codificada en UTF-8
-    
-    return transcription_object["text"]
+    try:
+        new_audio_path = convert.convert_to_wav(file_path)
+    except Exception as e:
+        print("⬇️⬇️⬇️⬇️ Error en la conversión de audio ⬇️⬇️⬇️⬇️\n",e)
+        # send a message to the user, telling them there was an error // enviar un mensaje al usuario, diciéndoles que hubo un error
+        await update.message.reply_text('Hubo un error en la conversión de audio. Probá de nuevo.')
+        # send e
+        await update.message.reply_text(str(e))
+        # send an images/cat.jpg to the user // enviar una imagen a la usuaria
+        await update.message.reply_photo(open('images/cat.jpg', 'rb'))
+    else:
+        # open the wav file // abrir el archivo wav
+        wav_audio = open(new_audio_path, "rb")
+        # call the OpenAI API to get the text from the audio file // llamar a la API de OpenAI para obtener el texto del archivo de audio
+        try:
+            transcription_object = openai.Audio.transcribe(
+            "whisper-1", wav_audio, language="es", prompt="esto es una nota de voz. hay momentos de silencio en el audio, cuidado con eso.")
+            print("Transcription:\n"+transcription_object["text"])
+        except Exception as e:
+            print("⬇️⬇️⬇️⬇️ Error en la transcripción de audio ⬇️⬇️⬇️⬇️\n",e)
+            # send a message to the user, telling them there was an error // enviar un mensaje al usuario, diciéndoles que hubo un error
+            await update.message.reply_text('Hubo un error en la transcripción de audio. Probá de nuevo.')
+            # send e
+            await update.message.reply_text(str(e))
+            # send an images/cat.jpg to the user // enviar una imagen a la usuaria
+            await update.message.reply_photo(open('images/sad.jpg', 'rb'))
+            raise e
+        else:
+            print("Transcription:\n"+transcription_object["text"])
+            return transcription_object["text"]
 
 # use the OpenAI API to generate answers // usar la API de OpenAI para generar respuestas
-async def complete_prompt(reason, transcription,username):
+async def complete_prompt(reason, transcription,username,update):
     # open json located in folder/username/data.json // abrir json ubicado en folder/username/data.json
     with open("users/"+username+"/data.json", "r") as read_file:
         data = json.load(read_file)
@@ -55,20 +74,31 @@ async def complete_prompt(reason, transcription,username):
         prompt = "Te cuento el tipo de persona que yo creo que soy:\n\n"+transcription+"\n\n¿Qué opinás? ¿Cómo te parece que soy como persona? Sé 100 por ciento honesto, te pago para que me digas la verdad\n\n"
 
     # call the OpenAI API to generate a summary of the voice note // llamar a la API de OpenAI para generar un resumen de la nota de voz
-    gpt_response = openai.ChatCompletion.create(
+    try:
+        gpt_response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
         {"role" : "system","content":assistant_config},
         {"role" : "user","content":prompt}
         ]
-    )
-    # get the text from the response // obtener el texto de la respuesta
-    text = (gpt_response.choices[0].message.content)
-    # decode the text // decodificar el texto
-    decoded_text = decode.decode_utf8(text)
-    # print the decoded text // imprimir el texto decodificado
-    print("Summary:\n"+decoded_text)
-    return decoded_text
+        )
+    except Exception as e:
+        print('⬇️⬇️⬇️⬇️ Error en la generación de texto ⬇️⬇️⬇️⬇️\n',e)
+        # send a message to the user, telling them there was an error // enviar un mensaje al usuario, diciéndoles que hubo un error
+        await update.message.reply_text('Hubo un error en la generación de texto. Probá de nuevo.')
+        # send e
+        await update.message.reply_text(str(e))
+        # send an images/hidethepainharold.jpg to the user // enviar una imagen a la usuaria
+        await update.message.reply_photo(open('images/hidethepainharold.jpg', 'rb'))
+        return
+    else:
+        # get the text from the response // obtener el texto de la respuesta
+        text = (gpt_response.choices[0].message.content)
+        # decode the text // decodificar el texto
+        decoded_text = decode.decode_utf8(text)
+        # print the decoded text // imprimir el texto decodificado
+        print("Summary:\n"+decoded_text)
+        return decoded_text
 
 
 # use the Embeddings API to turn text into vectors // usar la API de Embeddings para convertir texto en vectores

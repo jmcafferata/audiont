@@ -51,3 +51,12 @@ def update_user_data(username, field, value):
         data.setdefault(field, value)
     with open('users/'+username+'/data.json', 'w', encoding='utf-8') as file:
         json.dump(data, file, indent=4)
+
+def get_user_data(username, field):
+    # open the json file and return the value of the field // abrir el archivo json y devolver el valor del campo
+    with open('users/'+username+'/data.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+    if field in data:
+        return data[field]
+    else:
+        return None

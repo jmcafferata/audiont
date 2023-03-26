@@ -117,6 +117,7 @@ async def handle_audio(update, context):
             # reply to the message with the text extracted from the audio file // responder al mensaje con el texto extraído del archivo de audio
             await update.message.reply_text("El audio dice:")
             await update.message.reply_text(transcription)
+            
             # call the prompt function // llamar a la función prompt
             response = await ai.complete_prompt(reason="summary", transcription=transcription, username=update.message.from_user.username,update=update)
             # call the clean_options function // llamar a la función clean_options
@@ -151,11 +152,11 @@ async def handle_voice(update, context):
             transcription = await ai.transcribe_audio(update)
             response = await ai.complete_prompt(reason="assistance", transcription=transcription, username=update.message.from_user.username,update=update)
             await update.message.reply_text(response)
-            print("Last audio: "+csvm.get_last_audio(update.message.from_user.username)) 
         except:
             pass
     else:
         await subs.sendSubscribeMessage(update)
+    return ConversationHandler.END
 
 # function that handles the voice notes when responding to a voice note // función principal que maneja las notas de voz cuando se responde a una nota de voz
 async def respond_audio(update, context):

@@ -9,10 +9,20 @@ import config as config # import the config file // importar el archivo de confi
 import pandas as pd # library used to handle dataframes // librería usada para manejar dataframes
 from openai.embeddings_utils import get_embedding
 from openai.embeddings_utils import cosine_similarity
-import math
+import numpy as np
+from ast import literal_eval
+from datetime import datetime
+import pytz
+timezone = pytz.timezone('America/Argentina/Buenos_Aires')
+
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
 openai.api_key = config.openai_api_key
+
+def check_and_compute_cosine_similarity(x, message_vector):
+    x = np.array(literal_eval(x), dtype=np.float64)  # Convert x to float64
+    return cosine_similarity(x, message_vector)
+
 
 # use the OpenAI API to get the text from the audio file // usar la API de OpenAI para obtener el texto del archivo de audio 
 async def transcribe_audio(update):
@@ -69,7 +79,38 @@ async def complete_prompt(reason, transcription,username,update):
     elif (reason == "instructions"):
         prompt = "\n\nMe acaban de enviar un mensaje de voz. Dice lo siguiente: " + csvm.get_last_audio(username) + "\n\nTengo que responder este mensaje con las siguientes instrucciones: \n'" + transcription + "'\n\nEscribir el mensaje de parte mía hacia el remitente, usando mis instrucciones como guía (pero no es necesario poner literalmente lo que dice la instrucción), mi personalidad y usando el mismo tono conversacional que mi interlocutor. Usar los mensajes de Whatsapp como template para escribir igual a mí (pero sin la hora y sin poner mi nombre al principio). Que sea muy natural, que parezca el cuerpo de un mensaje de chat.\n\nMi respuesta:\n"
     elif (reason == "assistance"):
-        prompt = transcription
+
+        mensajes_file = "users/"+username+"/messages.csv"
+        # THE JUICE // EL JUGO
+        messages_df = pd.read_csv(mensajes_file, sep='|', encoding='utf-8')
+        mensajes_sim = messages_df
+        message_vector = get_embedding(transcription,'text-embedding-ada-002')
+        print('message_vector: ', message_vector)
+       # Calculate cosine similarity
+        mensajes_sim['similarity'] = mensajes_sim['embedding'].apply(lambda x: check_and_compute_cosine_similarity(x, message_vector))
+        print('similarity: ', mensajes_sim['similarity'])
+
+        # sort by similarity
+        mensajes_sim = mensajes_sim.sort_values(by=['similarity'], ascending=False)
+        print('mensajes_sim: ', mensajes_sim)
+        
+        now = datetime.now(timezone)
+        
+        mensajes = 'Mensajes previos:\n\n'
+
+        for index, row in mensajes_sim[['fecha', 'mensaje']].head(30).iterrows():
+            mensajes += str(row['fecha']) + ' - ' + str(row['mensaje']) + '\n\n'
+
+        prompt = "Sos Audion't, un bot argentino, buena onda y amable (con dialecto argentino) que recibe y entrega información sobre mí.Yo te doy y te pido información y vos respondés acordemente. Hoy es "+now.strftime("%A %d/%m/%Y %H:%M:%S")+".\nMi mensaje para vos es el siguiente.\n\n"+transcription+"'Si el mensaje suena como una consulta (lo puedo usar como si fuera una query de Google, ejemplo 'tareas de hoy'), responder con información clara, precisa y que me ayude usando la siguiente información previamente ingresada. Cada mensaje tiene la fecha y hora en que lo envié, y eso también es útil para informar.\n\n"+mensajes+"\n\nHablás en tono argentino (a menos que te hablen en un idioma que no sea castellano) y amigable, un poco revolucionario. Te divierten mucho las cosas que a mí me gustan, y muchas veces me tirás ideas creativas y originales para potenciar las mías. Usá emojis irónicos y humor irreverente. Si te hablo en otro lenguaje, como francés o inglés, respondé en el otro lenguaje."
+
+        print('prompt: ', prompt)
+
+        # add the response (which is a csv row of mensaje,nombre,telefono) to the csv in utf-8
+        with open(mensajes_file, 'a', encoding='utf-8') as f:
+            #write the date, message and embedding
+            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+transcription+'|'+str(message_vector)+'\n')
+
+
     elif (reason == "description"):
         prompt = "Te cuento el tipo de persona que yo creo que soy:\n\n"+transcription+"\n\n¿Qué opinás? ¿Cómo te parece que soy como persona? Sé 100 por ciento honesto, te pago para que me digas la verdad\n\n"
 

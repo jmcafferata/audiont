@@ -14,7 +14,7 @@ from ast import literal_eval
 from datetime import datetime
 import pytz
 timezone = pytz.timezone('America/Argentina/Buenos_Aires')
-
+from io import StringIO
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
 openai.api_key = config.openai_api_key
@@ -82,14 +82,20 @@ async def complete_prompt(reason, transcription,username,update):
 
         mensajes_file = "users/"+username+"/messages.csv"
         # THE JUICE // EL JUGO
-        messages_df = pd.read_csv(mensajes_file, sep='|', encoding='utf-8')
+        # Load messages
+        with open(mensajes_file, 'rb') as f:
+            csv_str = f.read()
+        messages_df = pd.read_csv(StringIO(csv_str.decode('utf-8')), sep='|', encoding='utf-8')
         mensajes_sim = messages_df
         message_vector = get_embedding(transcription,'text-embedding-ada-002')
         print('message_vector: ', message_vector)
        # Calculate cosine similarity
-        mensajes_sim['similarity'] = mensajes_sim['embedding'].apply(lambda x: check_and_compute_cosine_similarity(x, message_vector))
+        try:
+            mensajes_sim['similarity'] = mensajes_sim['embedding'].apply(lambda x: check_and_compute_cosine_similarity(x, message_vector))
+        except Exception as e:
+            print("⬇️⬇️⬇️⬇️ Error en el cálculo de similitud ⬇️⬇️⬇️⬇️\n",e)
         print('similarity: ', mensajes_sim['similarity'])
-
+        print('shit: ', mensajes_sim['similarity'].head(10))
         # sort by similarity
         mensajes_sim = mensajes_sim.sort_values(by=['similarity'], ascending=False)
         print('mensajes_sim: ', mensajes_sim)
@@ -101,11 +107,11 @@ async def complete_prompt(reason, transcription,username,update):
         for index, row in mensajes_sim[['fecha', 'mensaje']].head(30).iterrows():
             mensajes += str(row['fecha']) + ' - ' + str(row['mensaje']) + '\n\n'
 
-        prompt = "Sos Audion't, un bot argentino, buena onda y amable (con dialecto argentino) que recibe y entrega información sobre mí.Yo te doy y te pido información y vos respondés acordemente. Hoy es "+now.strftime("%A %d/%m/%Y %H:%M:%S")+".\nMi mensaje para vos es el siguiente.\n\n"+transcription+"'Si el mensaje suena como una consulta (lo puedo usar como si fuera una query de Google, ejemplo 'tareas de hoy'), responder con información clara, precisa y que me ayude usando la siguiente información previamente ingresada. Cada mensaje tiene la fecha y hora en que lo envié, y eso también es útil para informar.\n\n"+mensajes+"\n\nHablás en tono argentino (a menos que te hablen en un idioma que no sea castellano) y amigable, un poco revolucionario. Te divierten mucho las cosas que a mí me gustan, y muchas veces me tirás ideas creativas y originales para potenciar las mías. Usá emojis irónicos y humor irreverente. Si te hablo en otro lenguaje, como francés o inglés, respondé en el otro lenguaje."
+        prompt = "Sos Audion't, un bot argentino, buena onda y amable (con dialecto argentino) que recibe y entrega información sobre mí.Yo te doy y te pido información y vos respondés acordemente. Hoy es "+now.strftime("%A %d/%m/%Y %H:%M:%S")+".\nMi mensaje para vos es el siguiente.\n\n"+transcription+"'Si el mensaje suena como una consulta (lo puedo usar como si fuera una query de Google, ejemplo 'tareas de hoy'), responder con información clara, precisa y que me ayude usando la siguiente información previamente ingresada. Cada mensaje tiene la fecha y hora en que lo envié, y eso también es útil para informar.\n\n"+mensajes+"\n\nHablás en tono argentino (a menos que te hablen en un idioma que no sea castellano) y amigable, un poco revolucionario. Te divierten mucho las cosas que a mí me gustan, y muchas veces me tirás ideas creativas y originales para potenciar las mías. Usá emojis irónicos y humor irreverente. Si te hablo en otro lenguaje, como francés o inglés, respondé en el otro lenguaje. Si lo que te pedí es un archivo y encontraste el archivo en uno de los mensajes, que tu respuesta sea SOLAMENTE la dirección del archivo en el servidor. Por ejemplo: 'users/jmcafferata/files/file133.png'. Solamente eso, así yo descargo el archivo con otra función. Una vez te pedí que me pases el archivo y me enviaste una respuesta humana. Que no vuelva a pasar. Si te pido un archivo y lo encontrás, SOLO RESPONDEME CON LA DIRECCION DEL ARCHIVO"
 
         print('prompt: ', prompt)
 
-        # add the response (which is a csv row of mensaje,nombre,telefono) to the csv in utf-8
+        # add the message (which is a csv row of mensaje,nombre,telefono) to the csv in utf-8
         with open(mensajes_file, 'a', encoding='utf-8') as f:
             #write the date, message and embedding
             f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+transcription+'|'+str(message_vector)+'\n')

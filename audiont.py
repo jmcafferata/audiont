@@ -42,6 +42,8 @@ import modules.ai_functions as ai
 import modules.subscriptions as subs
 import pathlib as Path
 import requests
+import pytz
+import urllib.request
 
 # this is an example CURL request to the MercadoPago API
 # curl -X POST \
@@ -151,7 +153,14 @@ async def handle_voice(update, context):
         try:
             transcription = await ai.transcribe_audio(update)
             response = await ai.complete_prompt(reason="assistance", transcription=transcription, username=update.message.from_user.username,update=update)
-            await update.message.reply_text(response)
+            # check if the response is a path like users/username/files/... // verificar si la respuesta es un path como users/username/files/...
+            if Path.Path(response).is_file():
+                # send the document // enviar el archivo
+                await update.message.reply_document(document=open(response, 'rb'))
+                
+            else:
+                # send the text // enviar el texto
+                await update.message.reply_text(response)
         except:
             pass
     else:
@@ -286,7 +295,46 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         return
 
+# Function to handle files
+async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Extract the file and its description from the message
+    file = await update.message.document.get_file()
+    description = update.message.caption
+    #print the file components
     
+
+    # Get the user's username
+    username = update.message.from_user.username
+
+  # Save the file to the users/{username}/files folder
+    file_path = "users/"+username+"/files/"
+    print('file id: '+file.file_id)
+    print('file path: '+file.file_path)
+    print('file uid: '+file.file_unique_id)
+    print('file size: '+str(file.file_size))
+
+    # Remove the duplicate file path assignment
+    new_file_path = file_path + file.file_path.split('/')[-1]
+    print('new file path: '+new_file_path)
+
+    # Make sure that the directories in the file path exist
+    import os
+    os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
+
+    urllib.request.urlretrieve(file.file_path, new_file_path)
+
+
+    timezone = pytz.timezone("America/Argentina/Buenos_Aires")
+    # Store the file path, the time of the message (in Buenos Aires time), and the description
+    now = datetime.now(timezone)
+    file_entry = f"{now.strftime('%d/%m/%Y %H:%M:%S')}|{description}: {new_file_path}|{ai.get_embedding(description,'text-embedding-ada-002')}\n"
+  
+    # Save the entry to the users/{username}/messages.csv file
+    with open(f"users/{username}/messages.csv", "a", encoding="utf-8") as f:
+        f.write(file_entry)
+
+    # Send a confirmation message to the user
+    await update.message.reply_text("Archivo y descripción guardados correctamente.")
 
 
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -349,6 +397,9 @@ if __name__ == '__main__':
     # exclude conversation states // excluir estados de conversación
     voice_handler = MessageHandler(filters.VOICE & (~filters.COMMAND), handle_voice)
     application.add_handler(voice_handler)
+
+    file_handler = MessageHandler(filters.Document.ALL, handle_file)
+    application.add_handler(file_handler)
 
     # a callback query handler // un manejador de consulta de devolución de llamada
     callback_handler = CallbackQueryHandler(callback=callback)

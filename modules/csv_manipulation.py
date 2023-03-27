@@ -5,14 +5,16 @@ import json
 
 # store the audio message in the user's folder to be processed later // almacenar el mensaje de audio en la carpeta del usuario para ser procesado más tarde
 def store_to_csv(username,sender,message):
-    with open('users/'+username+'/messages.csv', 'a', newline='', encoding='utf-8') as file:
+    with open('users/'+username+'/audios.csv', 'a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow([datetime.now(), sender, message])
+        print("Audio message stored in users/"+username+"/audios.csv")
 
 # get the last audio message sent to the user // obtener el último mensaje de audio enviado al usuario
 def get_last_audio(username):
     # open the csv file users/username/messages.csv and find the last message sent by sender "other" // abrir el archivo csv users/username/messages.csv y encontrar el último mensaje enviado por el remitente "other"
-    with open('users/'+username+'/messages.csv', 'r', newline='', encoding='utf-8') as file:
+    with open('users/'+username+'/audios.csv', 'r', newline='', encoding='utf-8') as file:
+        print("Reading users/"+username+"/audios.csv")
         reader = csv.reader(file)
         for row in reversed(list(reader)):
             if (row[1] == "other"):

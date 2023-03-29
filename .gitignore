@@ -8,3 +8,4 @@ config.py
 *.oga
 logs.csv
 users
+messages.csv

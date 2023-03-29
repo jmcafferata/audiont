@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 # This code is used to process audio files from the telegram bot, get the text from the audio file and generate an automated response.
 # Este código se usa para procesar archivos de audio del bot de telegram, obtener el texto del archivo de audio y generar una respuesta automatizada.
 
@@ -293,3 +293,4 @@ if __name__ == '__main__':
 
     # start the bot // iniciar el bot
     application.run_polling()
+    logger.info('Bot started')

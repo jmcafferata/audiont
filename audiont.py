@@ -44,6 +44,11 @@ import pathlib as Path
 import requests
 import pytz
 import urllib.request
+import logging
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # this is an example CURL request to the MercadoPago API
 # curl -X POST \
@@ -407,3 +412,4 @@ if __name__ == '__main__':
 
     # start the bot // iniciar el bot
     application.run_polling()
+    logger.info('Bot started')

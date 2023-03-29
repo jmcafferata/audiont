@@ -45,6 +45,11 @@ import requests
 import pytz
 import urllib.request
 import telegram.constants
+import logging
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # this is an example CURL request to the MercadoPago API
 # curl -X POST \

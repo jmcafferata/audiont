@@ -204,6 +204,7 @@ async def complete_prompt(reason, message,username,update):
         messages=chat_messages,
         temperature=1.8,
         )
+        print('trying to generate text')
     except Exception as e:
         print('⬇️⬇️⬇️⬇️ Error en la generación de texto ⬇️⬇️⬇️⬇️\n',e)
         # send a message to the user, telling them there was an error // enviar un mensaje al usuario, diciéndoles que hubo un error

@@ -51,58 +51,6 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# this is an example CURL request to the MercadoPago API
-# curl -X POST \
-#       'https://api.mercadopago.com/v1/payments' \
-#       -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
-#       -H 'Content-Type: application/json' \ 
-#       -d '{
-#   "additional_info": {
-#     "items": [
-#       {
-#         "id": "MLB2907679857",
-#         "title": "Point Mini",
-#         "description": "Producto Point para cobros con tarjetas mediante bluetooth",
-#         "picture_url": "https://http2.mlstatic.com/resources/frontend/statics/growth-sellers-landings/device-mlb-point-i_medium@2x.png",
-#         "category_id": "electronics",
-#         "quantity": 1,
-#         "unit_price": 58.8
-#       }
-#     ],
-#     "payer": {
-#       "first_name": "Test",
-#       "last_name": "Test",
-#       "phone": {
-#         "area_code": 11,
-#         "number": "987654321"
-#       },
-#       "address": {}
-#     },
-#     "shipments": {
-#       "receiver_address": {
-#         "zip_code": "12312-123",
-#         "state_name": "Rio de Janeiro",
-#         "city_name": "Buzios",
-#         "street_name": "Av das Nacoes Unidas",
-#         "street_number": 3003
-#       }
-#     },
-#     "barcode": {}
-#   },
-#   "description": "Payment for product",
-#   "external_reference": "MP0001",
-#   "installments": 1,
-#   "metadata": {},
-#   "payer": {
-#     "entity_type": "individual",
-#     "type": "customer",
-#     "identification": {}
-#   },
-#   "payment_method_id": "visa",
-#   "token": "ff8080814c11e237014c1ff593b57b4d",
-#   "transaction_amount": 58.8
-# }'
-
 # CONTANTS // CONSTANTES
 
 # define the states of the conversation // definir los estados de la conversación

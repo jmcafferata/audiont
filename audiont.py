@@ -47,9 +47,9 @@ import urllib.request
 import telegram.constants
 import logging
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.DEBUG,
+#                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# logger = logging.getLogger(__name__)
 
 # CONTANTS // CONSTANTES
 
@@ -246,4 +246,4 @@ if __name__ == '__main__':
 
     # start the bot // iniciar el bot
     application.run_polling()
-    logger.info('Bot started')
+    # logger.info('Bot started')

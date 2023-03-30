@@ -87,10 +87,11 @@ async def complete_prompt(reason, message,username,update):
     
     mensajes_file = "messages.csv"
 
+
     with open(mensajes_file, 'rb') as f:
         csv_str = f.read()
 
-    messages_df = pd.read_csv(StringIO(csv_str.decode('utf-8')), sep='|', encoding='utf-8')
+    messages_df = pd.read_csv(StringIO(csv_str.decode('utf-8')), sep='|', encoding='utf-8',escapechar='\\')
 
     # mensajes sim va a ser el dataframe con las similarities
     mensajes_sim = messages_df
@@ -98,9 +99,11 @@ async def complete_prompt(reason, message,username,update):
     # Get the embedding for the message
     message_to_vectorize = now.strftime("%d/%m/%Y %H:%M:%S")+' - '+username+': '+message
     message_vector = get_embedding(message_to_vectorize,'text-embedding-ada-002')
-
+    print('message vectorized')
     # store the message in a csv file
     with open(mensajes_file, 'a', encoding='utf-8') as f:
+        # escape | characters in the message with \ character
+        message = message.replace('|','\|')
         #write the date, message and embedding
         message_row =now.strftime("%d/%m/%Y %H:%M:%S")+'|'+username+'|'+message
         f.write(message_row+'|'+str(message_vector)+'\n')

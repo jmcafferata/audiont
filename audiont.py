@@ -118,6 +118,7 @@ async def handle_voice(update, context):
                 await update.message.reply_text(response)
         except Exception as e:
             print('Algo falló. \n'+str(e))
+            await update.message.reply_text('Algo falló. \n'+str(e))
             pass
     else:
         await subs.sendSubscribeMessage(update)
@@ -143,7 +144,6 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # remove any newlines from the text // eliminar cualquier salto de línea del texto
     text = update.message.text.replace('\n', ' ')
-    text = update.message.text
     await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
 
     try:

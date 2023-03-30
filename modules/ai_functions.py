@@ -122,7 +122,7 @@ async def complete_prompt(reason, message,username,update):
     mensajes_similares = '\n\nMensajes previos:\n\n'
     print(mensajes_similares)
 
-    for index, row in mensajes_sim[['fecha', 'sender','mensaje']].head(50).iterrows():
+    for index, row in mensajes_sim[['fecha', 'sender','mensaje']].head(20).iterrows():
         if row['sender'] != "Audion't":
             mensaje_similar = str(row['fecha']) + ' - De: ' +row['sender']+ ' - Mensaje:'+ str(row['mensaje'])
             mensajes_similares += mensaje_similar + '\n'
@@ -158,18 +158,31 @@ async def complete_prompt(reason, message,username,update):
     print(assistant_config)
     if (reason == "summary"):
         clean.options = []
-        prompt =  "Hola, me acaban de enviar un mensaje de voz. Dice lo siguiente: " + message + """
-        "\n\nTengo que responder este mensaje. Haceme un resumen del mensaje y dame 4 opciones de respuesta:
-        las primeras 3 son contextuales y son títulos de posibles respuestas distintas (positiva, negativa, neutral)
-        que se le podría dar al mensaje de voz (máximo 40 caracteres). la cuarta opción es -Otra respuesta-.
+        prompt =  {"role":"user","content":"""Hola, me acaban de enviar un mensaje de voz. Dice lo siguiente:
+        
+        """ + message + """
+
+        Tengo que responder este mensaje. Haceme un resumen del mensaje y dame 4 opciones de respuesta:
+        las primeras 3 son contextuales y son títulos de posibles respuestas distintas (positiva, negativa, neutral) que se le podría dar al mensaje de voz (máximo 40 caracteres). la cuarta opción es -Otra respuesta-.
         Las opciones tienen que estar al final y con el formato 1.,2.,3.,4. y deben contener emojis que ilustren el sentimiento de la respuesta.
-        \n\nResumen del mensaje de voz:\n"""
+        
+        Resumen del mensaje de voz:
+        
+        """}
     elif (reason == "instructions"):
-        prompt = """\n\nMe acaban de enviar un mensaje de voz. Dice lo siguiente: """ + csvm.get_last_audio(username) + """
-        \n\nTengo que responder este mensaje con las siguientes instrucciones: \n""" + message + """
-        \n\nEscribir el mensaje de parte mía hacia el remitente, usando mis instrucciones como guía (pero no es necesario poner literalmente lo que dice la instrucción),
-        mi personalidad y usando el mismo tono conversacional que mi interlocutor. Usar los mensajes de Whatsapp como template para escribir igual a mí
-        (pero sin la hora y sin poner mi nombre al principio). Que sea muy natural, que parezca el cuerpo de un mensaje de chat.\n\nMi respuesta:\n"""
+        prompt = {"role":"user","content":"""Me acaban de enviar un mensaje de voz. Dice lo siguiente:
+        
+        """ + csvm.get_last_audio(username) + """
+        
+        Tengo que responder este mensaje con las siguientes instrucciones:
+        
+        """ + message + """
+        
+        Escribir el mensaje de parte mía hacia el remitente, usando mis instrucciones como guía (pero no es necesario poner literalmente lo que dice la instrucción), mi personalidad y usando el mismo tono conversacional que mi interlocutor. Usar los mensajes de Whatsapp como template para escribir igual a mí (pero sin la hora y sin poner mi nombre al principio). Que sea muy natural, que parezca el cuerpo de un mensaje de chat.
+
+        Mi respuesta:
+        
+        """}
     elif (reason == "assistance"):
         print("Asistencia")
         prompt = {"role":"user","content":message}
@@ -183,7 +196,7 @@ async def complete_prompt(reason, message,username,update):
     # if it doesn't, add it to the chat_messages list with property "role" : "user"
 
     
-    for index, row in messages_df[['fecha', 'sender','mensaje']].tail(50).iterrows():
+    for index, row in messages_df[['fecha', 'sender','mensaje']].tail(20).iterrows():
         if (row['sender'] == "Audion't"):
             chat_messages.append({"role" : "assistant","content":str(row['mensaje'])})
             # print the message
@@ -197,12 +210,10 @@ async def complete_prompt(reason, message,username,update):
     print("Prompt: "+str(prompt))
 
     
-    # call the OpenAI API to generate a summary of the voice note // llamar a la API de OpenAI para generar un resumen de la nota de voz
     try:
         gpt_response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=chat_messages,
-        temperature=1.8,
         )
         print('trying to generate text')
     except Exception as e:
@@ -224,10 +235,11 @@ async def complete_prompt(reason, message,username,update):
         decoded_text_without_new_lines = decoded_text.replace("\n"," - ")
 
         #store the message in the csv // almacenar el mensaje en el csv
-        with open(mensajes_file, 'a', encoding='utf-8') as f:
-            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+"|Audion't|"+decoded_text_without_new_lines+'|'+str(message_vector)+'\n')
-            f.close()
-        # print the decoded text // imprimir el texto decodificado
+        if (reason == "assistance"):
+            with open(mensajes_file, 'a', encoding='utf-8') as f:
+                f.write(now.strftime("%d/%m/%Y %H:%M:%S")+"|Audion't|"+decoded_text_without_new_lines+'|'+str(message_vector)+'\n')
+                f.close()
+            # print the decoded text // imprimir el texto decodificado
         print("Response:\n"+decoded_text)
 
 

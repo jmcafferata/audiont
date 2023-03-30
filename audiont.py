@@ -69,8 +69,7 @@ async def handle_audio(update, context):
         except:
             pass
         else:
-            csvm.store_to_csv(username=update.message.from_user.username,
-                            message=transcription, sender="other")
+            csvm.store_to_csv(message=transcription)
             # reply to the message with the text extracted from the audio file // responder al mensaje con el texto extraído del archivo de audio
             await update.message.reply_text("El audio dice:")
             await update.message.reply_text(transcription)
@@ -203,7 +202,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("Data: "+data)
     # if the data is a number, then it's an instruction // si los datos son un número, entonces es una instrucción
     if data.isdigit():
-        response = await ai.complete_prompt("instructions", clean.options[int(data)], update.callback_query.from_user.username,update)
+        response = await ai.complete_prompt("instructions", clean.options[int(data)], None,update)
         # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
         await update.callback_query.message.reply_text(response)
         await update.callback_query.message.reply_text("🥲 Si no te gustó la respuesta, podés mandarme una nota de voz con instrucciones 🗣️ o apretar otro botón.")

@@ -9,3 +9,4 @@ config.py
 logs.csv
 users
 messages.csv
+audios.csv

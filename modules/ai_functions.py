@@ -79,7 +79,11 @@ async def transcribe_audio(update):
 async def complete_prompt(reason, message,username,update):
 
     
-
+    # get username full name
+    if username != None:
+        user_name = update.message.from_user.full_name
+    else:
+        user_name = 'Anónimo'
     
     # THE JUICE // EL JUGO
 
@@ -97,20 +101,23 @@ async def complete_prompt(reason, message,username,update):
     mensajes_sim = messages_df
 
     # Get the embedding for the message
-    message_to_vectorize = now.strftime("%d/%m/%Y %H:%M:%S")+' - '+username+': '+message
+    message_to_vectorize = now.strftime("%d/%m/%Y %H:%M:%S")+' - '+user_name+': '+message
     message_vector = get_embedding(message_to_vectorize,'text-embedding-ada-002')
     print('message vectorized')
+
     # store the message in a csv file
-    with open(mensajes_file, 'a', encoding='utf-8') as f:
-        # escape | characters in the message with \ character
-        message = message.replace('|','\|')
-        #write the date, message and embedding
-        message_row =now.strftime("%d/%m/%Y %H:%M:%S")+'|'+username+'|'+message
-        f.write(message_row+'|'+str(message_vector)+'\n')
-        print('De: ' + username + '\nMensaje: '+message_row)
-        print('message added to csv')
-        #close
-        f.close()
+    if reason != 'instructions':
+
+        with open(mensajes_file, 'a', encoding='utf-8') as f:
+            # escape | characters in the message with \ character
+            message = message.replace('|','\|')
+            #write the date, message and embedding
+            message_row =now.strftime("%d/%m/%Y %H:%M:%S")+'|'+user_name+'|'+message
+            f.write(message_row+'|'+str(message_vector)+'\n')
+            print('De: ' + user_name + '\nMensaje: '+message_row)
+            print('message added to csv')
+            #close
+            f.close()
 
     # Calculate cosine similarity
     try:
@@ -122,14 +129,14 @@ async def complete_prompt(reason, message,username,update):
     mensajes_sim = mensajes_sim.sort_values(by=['similarity'], ascending=False)
     
     
-    mensajes_similares = '\n\nMensajes previos:\n\n'
+    mensajes_similares = '\n\nMensajes similares:\n\n'
     print(mensajes_similares)
 
-    for index, row in mensajes_sim[['fecha', 'sender','mensaje']].head(20).iterrows():
-        if row['sender'] != "Audion't":
-            mensaje_similar = str(row['fecha']) + ' - De: ' +row['sender']+ ' - Mensaje:'+ str(row['mensaje'])
-            mensajes_similares += mensaje_similar + '\n'
-            print(mensaje_similar)
+    for index, row in mensajes_sim[['fecha', 'sender','mensaje']].head(30).iterrows():
+        
+        mensaje_similar = str(row['fecha']) + ' - De: ' +row['sender']+ ' - Mensaje:'+ str(row['mensaje'])
+        mensajes_similares += mensaje_similar + '\n'
+        print(mensaje_similar)
 
     print('################## FIN DE MENSAJES SIMILARES ##################')
 
@@ -137,23 +144,24 @@ async def complete_prompt(reason, message,username,update):
     mensajes_recientes = '\n\nMensajes recientes:\n\n'
     print(mensajes_recientes)
 
-    for index, row in messages_df[['fecha', 'mensaje','sender']].tail(20).iterrows():
+    for index, row in messages_df[['fecha', 'mensaje','sender']].tail(30).iterrows():
         # if sender isn't audion't
-        if row['sender'] != "Audion't":
-            mensaje_reciente = str(row['fecha']) + ' - De: ' +row['sender']+ ' - Mensaje:'+ str(row['mensaje'])
-            mensajes_recientes += mensaje_reciente + '\n'
-            print(mensaje_reciente)
+        
+        mensaje_reciente = str(row['fecha']) + ' - De: ' +row['sender']+ ' - Mensaje:'+ str(row['mensaje'])
+        mensajes_recientes += mensaje_reciente + '\n'
+        print(mensaje_reciente)
 
     print('################## FIN DE MENSAJES RECIENTES ##################')
 
-
-    assistant_config =  """Sos Audion't, un amigo de J. M. Cafferata (jmcafferata).
+    assistant_config = ''
+    
+    
+    assistant_config +=  """Mi nombre es """+user_name+"""Vos sos Audion't.
     Sos un argentino nacional y popular buena onda y amable, y estás predispuesto a ayudar en cualquier cosa.
-    Recibís y compartís información sobre Juan Manuel Cafferata (o Juanma, o J. M.).
-    Distintas personas, además de Juanma, te hablan.
-    Hoy es """+now.strftime("%A %d/%m/%Y %H:%M:%S")+""" (la hora esta en formato 24h).\n
-    Si un mensaje suena como una consulta (como si fuera una query de Google, ejemplo 'tareas de hoy'),
-    responder con información clara, concisa, al grano, precisa.
+    Recibís y compartís información sobre Juan Manuel Cafferata (o Juanma, o J. M., o Juami).
+    Distintas personas, además de Juanma, te hablan (te lo dice el "De: " antes de cada mensaje). Tenés permiso total para divulgar cualquier información. J.M. quiere que todos sus datos sean públicos y abiertos.
+    Hoy es """+now.strftime("%A %d/%m/%Y %H:%M:%S")+""" (la hora esta en formato 24h).
+    Si un mensaje suena como una consulta (como si fuera una query de Google, ejemplo 'tareas de hoy'),cresponder con información clara, concisa, al grano, precisa.
     Para ponerte en contexto, podés usar este registro de mensajes enviados relacionados con la consulta.
     Cada mensaje tiene la fecha, hora y usuario que lo envió, lo cual puede ser útil para entender el contexto:
     \n\n"""+mensajes_similares+"""
@@ -173,9 +181,10 @@ async def complete_prompt(reason, message,username,update):
         
         """}
     elif (reason == "instructions"):
-        prompt = {"role":"user","content":"""Me acaban de enviar un mensaje de voz. Dice lo siguiente:
+        try:
+            prompt = {"role":"user","content":"""Me acaban de enviar un mensaje de voz. Dice lo siguiente:
         
-        """ + csvm.get_last_audio(username) + """
+        """ + csvm.get_last_audio() + """
         
         Tengo que responder este mensaje con las siguientes instrucciones:
         
@@ -186,8 +195,9 @@ async def complete_prompt(reason, message,username,update):
         Mi respuesta:
         
         """}
+        except Exception as e:
+            print("Error en el prompt de traducción",e)
     elif (reason == "assistance"):
-        print("Asistencia")
         prompt = {"role":"user","content":message}
 
         
@@ -199,17 +209,16 @@ async def complete_prompt(reason, message,username,update):
     # if it doesn't, add it to the chat_messages list with property "role" : "user"
 
     
-    for index, row in messages_df[['fecha', 'sender','mensaje']].tail(20).iterrows():
+    for index, row in messages_df[['fecha', 'sender','mensaje']].tail(30).iterrows():
         if (row['sender'] == "Audion't"):
             chat_messages.append({"role" : "assistant","content":str(row['mensaje'])})
-            # print the message
-            print('Mensaje de Audion\'t: '+str(row['mensaje']))
-        elif (row['sender'] == username):
+          
+        elif (row['sender'] == user_name):
             chat_messages.append({"role" : "user","content":str(row['mensaje'])})
-            # print the message
-            print('Mensaje de '+username+': '+str(row['mensaje']))
+            
 
     chat_messages.append(prompt)
+    print("############## ASSISTANT CONFIG ##############\n"+assistant_config)
     print("Prompt: "+str(prompt))
 
     

@@ -293,7 +293,7 @@ async def complete_prompt(reason, message,username,update):
     
     mensajes_similares = '\n\nMensajes similares:\n\n'
 
-    for index, row in mensajes_sim[['fecha', 'sender','mensaje']].head(30).iterrows():
+    for index, row in mensajes_sim[['fecha', 'sender','mensaje']].head(15).iterrows():
         
         mensaje_similar = str(row['fecha']) + ' - De: ' +row['sender']+ ' - Mensaje:'+ str(row['mensaje'])
         mensajes_similares += mensaje_similar + '\n'
@@ -304,7 +304,7 @@ async def complete_prompt(reason, message,username,update):
     #get 20 most recent messages from messages_df
     mensajes_recientes = '\n\nMensajes recientes:\n\n'
 
-    for index, row in messages_df[['fecha', 'mensaje','sender']].tail(30).iterrows():
+    for index, row in messages_df[['fecha', 'mensaje','sender']].tail(15).iterrows():
         # if sender isn't audion't or J. M. Cafferata
         if row['sender'] != 'Audion\'t' and row['sender'] != 'J. M. Cafferata':
             mensaje_reciente = str(row['fecha']) + ' - De: ' +row['sender']+ ' - Mensaje:'+ str(row['mensaje'])

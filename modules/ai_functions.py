@@ -237,7 +237,7 @@ async def complete_prompt(reason, message,username,update):
 
     
     # get username full name
-    if username != None:
+    if username != None and reason != 'summary':
         user_name = update.message.from_user.full_name
     else:
         user_name = 'Anónimo'
@@ -269,6 +269,7 @@ async def complete_prompt(reason, message,username,update):
             # escape | characters in the message with \ character
             message = str(message).replace('|','\|')
             #write the date, message and embedding
+            
             message_row =now.strftime("%d/%m/%Y %H:%M:%S")+'|'+user_name+'|'+message
             f.write(message_row+'|'+str(message_vector)+'\n')
             print('De: ' + user_name + '\nMensaje: '+message_row)

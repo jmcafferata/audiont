@@ -120,14 +120,8 @@ async def handle_voice(update, context):
         try:
             transcription = await ai.transcribe_audio(update)
             response = await ai.complete_prompt(reason="assistance", message=transcription, username=update.message.from_user.username,update=update)
-            # check if the response is a path like users/username/files/... // verificar si la respuesta es un path como users/username/files/...
-            # if Path.Path(response).is_file():
-            #     # send the document // enviar el archivo
-            #     await update.message.reply_document(document=open(response, 'rb'))
-                
-            # else:
-            #     # send the text // enviar el texto
-            #     await update.message.reply_text(response)
+            
+            await update.message.reply_text(response)
         except Exception as e:
             print('Algo falló. \n'+str(e))
             await update.message.reply_text('Algo falló. \n'+str(e))

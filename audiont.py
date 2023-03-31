@@ -160,46 +160,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         response = await ai.complete_prompt("assistance", text, update.message.from_user.username,update)
-        # if the response starts with SCRAPE:
-        if response.startswith('GOOGLE'):
-            print('googling')
-            # #remove the SCRAPE: part
-            # query = response[6:]
-            # # google the website using the google search engine id 35af1fa5e6c614873 curl
-            # querychunks_and_links = google(query,text)
-
-            # #create a string of the 3 summaries
-            # results_chunks = ""
-            # for i in range(3):
-            #     # print types
-            #     print("type of querychunks_and_links[i]['link']: ", type(querychunks_and_links[i]["link"]))
-            #     print("type of querychunks_and_links[i]['chunks']: ", type(querychunks_and_links[i]["chunks"]))
-                
-            #     results_chunks += querychunks_and_links[i]["link"]+ ": "+querychunks_and_links[i]["chunks"] + "\n\n"
-            # print("results_chunks: ", results_chunks)
-            # # if it's longer than 9000, truncate it
-            # await context.bot.send_message(chat_id=update.effective_chat.id,text="¡Buscando en internet! Fua, cuánta info hay acá. Bancame, esto va a tardar un poco... 😐")
-            # print("about to search chunks")
-            # try:
-            #     query_gpt_response = await ai.complete_prompt("google", results_chunks, update.message.from_user.username,update)
-            #     await context.bot.send_message(chat_id=update.effective_chat.id,text=query_gpt_response)
-            #     await context.bot.send_message(chat_id=update.effective_chat.id,text="Fuente: ")
-            #     # send the first 3 links and snippets
-            #     snippets_and_links_list = ""
-            #     for object in querychunks_and_links:
-            #         snippets_and_links_list += object['snippet'] + "\n" + object['link'] + "\n\n"
-            #     await context.bot.send_message(chat_id=update.effective_chat.id,text=snippets_and_links_list)
-
-
-            # except Exception as e:
-            #     exception_type, exception_object, exception_traceback = sys.exc_info()
-            #     line_number = exception_traceback.tb_lineno
-            #     print('⬇️⬇️⬇️⬇️ Error en resumir ⬇️⬇️⬇️⬇️\n',line_number)
-          
-        else:
-            await context.bot.send_message(chat_id=update.effective_chat.id,text=response)
-            print('sending message')
         
+        await context.bot.send_message(chat_id=update.effective_chat.id,text=response)
+        print('sending message')
+    
         
 
     except Exception as e:

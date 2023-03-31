@@ -284,6 +284,11 @@ async def complete_prompt(reason, message,username,update):
 
     # sort by similarity
     mensajes_sim = mensajes_sim.sort_values(by=['similarity'], ascending=False)
+
+    print(mensajes_sim)
+    print('################## MENSAJES SIMILARES ##################')
+
+
     
     
     mensajes_similares = '\n\nMensajes similares:\n\n'
@@ -398,8 +403,7 @@ async def complete_prompt(reason, message,username,update):
         "\nUsá la siguiente información para responder el mensaje:\n\n"
         })
         chat_messages.append({"role":"user","content":internet_information})
-    
-    
+    print("############### FIN DE CONFIGURACIÓN DEL PROMPT ################")
     print("############### PROMPTING THE AI ################")
     gpt_response = openai.ChatCompletion.create(
     model="gpt-4",

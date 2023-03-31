@@ -46,6 +46,17 @@ import pytz
 import urllib.request
 import telegram.constants
 import logging
+import requests
+from bs4 import BeautifulSoup
+import openai
+import sys
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+from openai.embeddings_utils import get_embedding
+from openai.embeddings_utils import cosine_similarity
+import traceback
+
 
 # logging.basicConfig(level=logging.DEBUG,
 #                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -57,6 +68,8 @@ import logging
 ASK_NAME, ASK_DESCRIPTION,ASK_MESSAGES,AWAIT_INSTRUCTIONS,ASK_MORE_MESSAGES,ASK_PAYEE,CONFIRM_PAYMENT = range(7)
 
 # function that handles the audio files // función principal que maneja los archivos de audio
+
+
 
 async def handle_audio(update, context):
     # check if username in config.subscribers // verificar si el username está en config.subscribers
@@ -147,12 +160,54 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         response = await ai.complete_prompt("assistance", text, update.message.from_user.username,update)
+        # if the response starts with SCRAPE:
+        if response.startswith('GOOGLE'):
+            print('googling')
+            # #remove the SCRAPE: part
+            # query = response[6:]
+            # # google the website using the google search engine id 35af1fa5e6c614873 curl
+            # querychunks_and_links = google(query,text)
+
+            # #create a string of the 3 summaries
+            # results_chunks = ""
+            # for i in range(3):
+            #     # print types
+            #     print("type of querychunks_and_links[i]['link']: ", type(querychunks_and_links[i]["link"]))
+            #     print("type of querychunks_and_links[i]['chunks']: ", type(querychunks_and_links[i]["chunks"]))
+                
+            #     results_chunks += querychunks_and_links[i]["link"]+ ": "+querychunks_and_links[i]["chunks"] + "\n\n"
+            # print("results_chunks: ", results_chunks)
+            # # if it's longer than 9000, truncate it
+            # await context.bot.send_message(chat_id=update.effective_chat.id,text="¡Buscando en internet! Fua, cuánta info hay acá. Bancame, esto va a tardar un poco... 😐")
+            # print("about to search chunks")
+            # try:
+            #     query_gpt_response = await ai.complete_prompt("google", results_chunks, update.message.from_user.username,update)
+            #     await context.bot.send_message(chat_id=update.effective_chat.id,text=query_gpt_response)
+            #     await context.bot.send_message(chat_id=update.effective_chat.id,text="Fuente: ")
+            #     # send the first 3 links and snippets
+            #     snippets_and_links_list = ""
+            #     for object in querychunks_and_links:
+            #         snippets_and_links_list += object['snippet'] + "\n" + object['link'] + "\n\n"
+            #     await context.bot.send_message(chat_id=update.effective_chat.id,text=snippets_and_links_list)
 
 
-        await context.bot.send_message(chat_id=update.effective_chat.id,text=response)
+            # except Exception as e:
+            #     exception_type, exception_object, exception_traceback = sys.exc_info()
+            #     line_number = exception_traceback.tb_lineno
+            #     print('⬇️⬇️⬇️⬇️ Error en resumir ⬇️⬇️⬇️⬇️\n',line_number)
+          
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id,text=response)
+            print('sending message')
+        
+        
+
     except Exception as e:
-        print(e)
-        return
+        exception_type, exception_object, exception_traceback = sys.exc_info()
+        line_number = exception_traceback.tb_lineno
+        print('⬇️⬇️⬇️⬇️ Error en todo ⬇️⬇️⬇️⬇️\n',line_number)
+          
+    return
 
 # Function to handle files
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -207,7 +262,25 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.callback_query.message.reply_text(response)
         await update.callback_query.message.reply_text("🥲 Si no te gustó la respuesta, podés mandarme una nota de voz con instrucciones 🗣️ o apretar otro botón.")
     
+async def google(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
+    data = ''
+    for arg in context.args:
+        data = data + arg + " "
+    print("Doing google search...")
+    print("Data: "+data)
+    # if the data is a number, then it's an instruction // si los datos son un número, entonces es una instrucción
+    try:
+        response = await ai.complete_prompt("google", data, None,update)
+        await update.message.reply_text(response)
+    except Exception as e:
+        exception_traceback = traceback.format_exc()
+        await update.message.reply_text(f"¡No encontré nada! 🙃\nException: {str(e)}\nTraceback: {exception_traceback}")
+        print('⬇️⬇️⬇️⬇️ Error en google ⬇️⬇️⬇️⬇️\n',exception_traceback)
 
+    
+    # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
+    
 
 
 # main function // función principal
@@ -227,7 +300,7 @@ if __name__ == '__main__':
 
     
     # for when the bot receives a text message // para cuando el bot recibe un archivo de audio
-    text_handler = MessageHandler(filters.TEXT, handle_text)
+    text_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), handle_text)
     application.add_handler(text_handler)
 
 
@@ -238,6 +311,10 @@ if __name__ == '__main__':
 
     file_handler = MessageHandler(filters.Document.ALL, handle_file)
     application.add_handler(file_handler)
+
+    #/google command
+    google_handler = CommandHandler('google', google)
+    application.add_handler(google_handler)
 
     # a callback query handler // un manejador de consulta de devolución de llamada
     callback_handler = CallbackQueryHandler(callback=callback)

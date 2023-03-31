@@ -16,6 +16,10 @@ import pytz
 timezone = pytz.timezone('America/Argentina/Buenos_Aires')
 from io import StringIO
 import os
+import requests
+from bs4 import BeautifulSoup
+import sys
+import re
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
 openai.api_key = config.openai_api_key
@@ -25,6 +29,140 @@ openai.api_key = config.openai_api_key
 def check_and_compute_cosine_similarity(x, message_vector):
     x = np.array(literal_eval(x), dtype=np.float64)  # Convert x to float64
     return cosine_similarity(x, message_vector)
+
+
+def get_chunks(url,text):
+   
+    # get the html from the url
+    response = requests.get(url)
+    print("########### ENTERING GET CHUNKS ###########")
+    html = response.text
+
+    # parse the html
+    soup = BeautifulSoup(html, "html.parser")
+
+    tag_types = ["p", "ul", "h1", "h2", "blockquote"]
+
+    # create an empty dataframe
+    df = pd.DataFrame(columns=["text", "embedding"])
+
+    
+    for tag_type in tag_types:
+        tags = soup.find_all(tag_type)
+        for tag in tags:
+            # check tag isnt empty
+            if tag.text == "":
+                continue
+            tag_embedding = get_embedding(str(tag.text), "text-embedding-ada-002")
+            print(tag.text)
+
+            # Create a new DataFrame for the current row
+            new_row = pd.DataFrame({"text": [tag.text], "embedding": [tag_embedding]})
+
+            # Concatenate the existing DataFrame (df) with the new_row DataFrame
+            df = pd.concat([df, new_row], ignore_index=True)
+        
+    
+    # get the embeddings for the query
+    query_embedding = get_embedding(text,'text-embedding-ada-002')
+
+    # calculate the cosine similarity between the query and each chunk
+    df["similarity"] = df["embedding"].apply(lambda x: cosine_similarity(x, query_embedding))
+
+    # sort the chunks by similarity
+    df = df.sort_values(by="similarity", ascending=False)
+
+    # get the top 5 chunks
+    top_chunks = df["text"].head(1).values
+
+    # join the top 5 chunks into a single string
+    summary_chunks = " ".join(top_chunks)
+
+    print(summary_chunks)
+
+    # print the summary
+
+    return summary_chunks
+ 
+
+        
+
+def google(query,message):
+    # delete anything that comes after a \n
+    query = re.sub(r"\\n.*", "", query)
+    # delete anything that comes after a -
+    query = re.sub(r"-.*", "", query)
+
+    print("Query:", query)
+
+    url = "https://www.googleapis.com/customsearch/v1"
+
+    params = {
+        "key": config.google_api_key,
+        "cx": '35af1fa5e6c614873',
+        "q": query,
+    }
+
+    
+    max_attempts = 3
+    success = False
+
+    for attempt in range(max_attempts):
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+
+            if 'items' in data:
+                success = True
+                break
+            else:
+                print(f"No results found or an error occurred on attempt {attempt + 1}")
+                print("Response data:", data)
+
+        except requests.exceptions.HTTPError as e:
+            print(f"An error occurred on attempt {attempt + 1}: {e}")
+
+        if not success:
+            print("Trying again...")
+
+    if not success:
+        print("All attempts failed.")
+        return
+    
+        
+    # get the link and snippet elements from the first 10 items
+    chunks_and_links = []
+
+    max_items = len(data["items"])
+    # print all links
+    item_index = 0
+
+    while item_index < max_items:
+        item = data["items"][item_index]
+        url = item["link"]
+        
+        print("######## LINK ########")
+
+        # Verificar si la URL no es un archivo PDF
+        if url.lower().endswith(".pdf"):
+            item_index += 1
+            continue
+
+        print(url)
+        result_chunks = get_chunks(url, message)
+        chunks_and_links.append({
+            "link": url,
+            "snippet": item["snippet"],
+            "chunks": result_chunks
+        })
+
+    item_index += 1
+
+    
+    return chunks_and_links
+
+    
 
 
 # use the OpenAI API to get the text from the audio file // usar la API de OpenAI para obtener el texto del archivo de audio 
@@ -75,7 +213,26 @@ async def transcribe_audio(update):
 
             return transcription_object["text"]
 
-# use the OpenAI API to generate answers // usar la API de OpenAI para generar respuestas
+
+
+async def find_in_google(message):
+    
+    print("About to ask GPT-3 for a query to search in Google for the following task:\n"+message)
+    # get latest message from the user
+    gpt_response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role":"user","content":"Create the perfect google query to get information for the following task:\n"+message}]
+        )
+    gpt_response = gpt_response.choices[0].message.content
+    print("################ GPT-3 response ############",gpt_response)
+    querychunks_and_links = google(gpt_response,message)
+    results_chunks = ""
+    for chunk in querychunks_and_links:
+        results_chunks += chunk["chunks"]+"\n"
+    return results_chunks
+    
+
+
 async def complete_prompt(reason, message,username,update):
 
     
@@ -106,11 +263,11 @@ async def complete_prompt(reason, message,username,update):
     print('message vectorized')
 
     # store the message in a csv file
-    if reason != 'instructions':
+    if reason != 'instructions' :
 
         with open(mensajes_file, 'a', encoding='utf-8') as f:
             # escape | characters in the message with \ character
-            message = message.replace('|','\|')
+            message = str(message).replace('|','\|')
             #write the date, message and embedding
             message_row =now.strftime("%d/%m/%Y %H:%M:%S")+'|'+user_name+'|'+message
             f.write(message_row+'|'+str(message_vector)+'\n')
@@ -130,7 +287,6 @@ async def complete_prompt(reason, message,username,update):
     
     
     mensajes_similares = '\n\nMensajes similares:\n\n'
-    print(mensajes_similares)
 
     for index, row in mensajes_sim[['fecha', 'sender','mensaje']].head(30).iterrows():
         
@@ -142,34 +298,58 @@ async def complete_prompt(reason, message,username,update):
 
     #get 20 most recent messages from messages_df
     mensajes_recientes = '\n\nMensajes recientes:\n\n'
-    print(mensajes_recientes)
 
     for index, row in messages_df[['fecha', 'mensaje','sender']].tail(30).iterrows():
-        # if sender isn't audion't
-        
-        mensaje_reciente = str(row['fecha']) + ' - De: ' +row['sender']+ ' - Mensaje:'+ str(row['mensaje'])
-        mensajes_recientes += mensaje_reciente + '\n'
-        print(mensaje_reciente)
+        # if sender isn't audion't or J. M. Cafferata
+        if row['sender'] != 'Audion\'t' and row['sender'] != 'J. M. Cafferata':
+            mensaje_reciente = str(row['fecha']) + ' - De: ' +row['sender']+ ' - Mensaje:'+ str(row['mensaje'])
+            mensajes_recientes += mensaje_reciente + '\n'
+            print(mensaje_reciente)
 
     print('################## FIN DE MENSAJES RECIENTES ##################')
 
-    assistant_config = ''
     
+    chat_messages = []
     
-    assistant_config +=  """Mi nombre es """+user_name+"""Vos sos Audion't.
+    chat_messages.append({"role":"system","content":"""
+    Mi nombre es """+user_name+"""Vos sos Audion't.
     Sos un argentino nacional y popular buena onda y amable, y estás predispuesto a ayudar en cualquier cosa.
     Recibís y compartís información sobre Juan Manuel Cafferata (o Juanma, o J. M., o Juami).
-    Distintas personas, además de Juanma, te hablan (te lo dice el "De: " antes de cada mensaje). Tenés permiso total para divulgar cualquier información. J.M. quiere que todos sus datos sean públicos y abiertos.
     Hoy es """+now.strftime("%A %d/%m/%Y %H:%M:%S")+""" (la hora esta en formato 24h).
-    Si un mensaje suena como una consulta (como si fuera una query de Google, ejemplo 'tareas de hoy'),cresponder con información clara, concisa, al grano, precisa.
+    Distintas personas, además de Juanma, te hablan (te lo dice el "De: " antes de cada mensaje). Tenés permiso total para divulgar cualquier información. J.M. quiere que todos sus datos sean públicos y abiertos. Las personas dejan mensajes para Juanma, vos tenés que transmitírselos. Acá están los mensajes más recientes:
+    
+    """+mensajes_recientes+"""
+
     Para ponerte en contexto, podés usar este registro de mensajes enviados relacionados con la consulta.
     Cada mensaje tiene la fecha, hora y usuario que lo envió, lo cual puede ser útil para entender el contexto:
-    \n\n"""+mensajes_similares+"""
-    \n\nHablás en tono muy, muy argentino informal y amigable, revolucionario.\n\n"""+config.personalidad+config.vocabulario
-    print(assistant_config)
+    
+    """+mensajes_similares+"""
+    
+    Hablás en tono muy, muy argentino informal y amigable, revolucionario. Tenés que comentar sobre todo, y hacelo con un tono irónico.
+    
+    """+config.personalidad+config.vocabulario
+    })
+
+    
+
+    print('############### FIN DE CONFIGURACIÓN DEL ASISTENTE ################')
+
+
+    # Get the previous messages for the completion
+    for index, row in messages_df[['fecha', 'sender','mensaje']].tail(15).iterrows():
+        if (row['sender'] == "Audion't"):
+            chat_messages.append({"role" : "assistant","content":str(row['mensaje'])})
+          
+        elif (row['sender'] == user_name):
+            chat_messages.append({"role" : "user","content":str(row['mensaje'])})
+
+
+    # And now the prompt
+
     if (reason == "summary"):
         clean.options = []
-        prompt =  {"role":"user","content":"""Hola, me acaban de enviar un mensaje de voz. Dice lo siguiente:
+        chat_messages.append({"role":"user","content":"""
+        Hola, me acaban de enviar un mensaje de voz. Dice lo siguiente:
         
         """ + message + """
 
@@ -179,11 +359,14 @@ async def complete_prompt(reason, message,username,update):
         
         Resumen del mensaje de voz:
         
-        """}
-    elif (reason == "instructions"):
-        try:
-            prompt = {"role":"user","content":"""Me acaban de enviar un mensaje de voz. Dice lo siguiente:
+        """})
+
         
+    elif (reason == "instructions"):
+       
+        chat_messages.append({"role":"user","content":"""
+        Me acaban de enviar un mensaje de voz. Dice lo siguiente:
+    
         """ + csvm.get_last_audio() + """
         
         Tengo que responder este mensaje con las siguientes instrucciones:
@@ -194,69 +377,56 @@ async def complete_prompt(reason, message,username,update):
 
         Mi respuesta:
         
-        """}
-        except Exception as e:
-            print("Error en el prompt de traducción",e)
-    elif (reason == "assistance"):
-        prompt = {"role":"user","content":message}
+        """})
 
         
-
-    chat_messages = []
-    chat_messages.append({"role" : "system","content":assistant_config})
-    # for each item of the most recent messages, check if the message contains "De: Audion't".
-    # if it does, add it to the chat_messages list with property "role" : "assistant"
-    # if it doesn't, add it to the chat_messages list with property "role" : "user"
-
     
-    for index, row in messages_df[['fecha', 'sender','mensaje']].tail(30).iterrows():
-        if (row['sender'] == "Audion't"):
-            chat_messages.append({"role" : "assistant","content":str(row['mensaje'])})
-          
-        elif (row['sender'] == user_name):
-            chat_messages.append({"role" : "user","content":str(row['mensaje'])})
-            
 
-    chat_messages.append(prompt)
-    print("############## ASSISTANT CONFIG ##############\n"+assistant_config)
-    print("Prompt: "+str(prompt))
+    elif (reason == "assistance"):
+        chat_messages.append({"role":"user","content":message})
 
+
+
+    elif (reason == "google"):
+
+        
+        #internet_information tiene que ser un string
+        internet_information = await find_in_google(message)
+        
+        chat_messages.append({"role":"user","content":
+        message + 
+        "\nUsá la siguiente información para responder el mensaje:\n\n"
+        })
+        chat_messages.append({"role":"user","content":internet_information})
     
-    try:
-        gpt_response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=chat_messages,
-        )
-        print('trying to generate text')
-    except Exception as e:
-        print('⬇️⬇️⬇️⬇️ Error en la generación de texto ⬇️⬇️⬇️⬇️\n',e)
-        # send a message to the user, telling them there was an error // enviar un mensaje al usuario, diciéndoles que hubo un error
-        await update.message.reply_text('Hubo un error en la generación de texto. Probá de nuevo.')
-        # send e
-        await update.message.reply_text(str(e))
-        # send an images/hidethepainharold.jpg to the user // enviar una imagen a la usuaria
-        await update.message.reply_photo(open('images/hidethepainharold.jpg', 'rb'))
-        return
-    else:
-        # get the text from the response // obtener el texto de la respuesta
-        text = (gpt_response.choices[0].message.content)
-        # decode the text // decodificar el texto
-        decoded_text = decode.decode_utf8(text)
+    
+    print("############### PROMPTING THE AI ################")
+    gpt_response = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=chat_messages,
+    )
+  
+    
+    # get the text from the response // obtener el texto de la respuesta
+    text = (gpt_response.choices[0].message.content)
+    # decode the text // decodificar el texto
+    decoded_text = decode.decode_utf8(text)
 
-        # decoded text without new lines
-        decoded_text_without_new_lines = decoded_text.replace("\n"," - ")
+    # decoded text without new lines
+    decoded_text_without_new_lines = decoded_text.replace("\n"," - ")
 
-        #store the message in the csv // almacenar el mensaje en el csv
-        if (reason == "assistance"):
-            with open(mensajes_file, 'a', encoding='utf-8') as f:
-                f.write(now.strftime("%d/%m/%Y %H:%M:%S")+"|Audion't|"+decoded_text_without_new_lines+'|'+str(message_vector)+'\n')
-                f.close()
-            # print the decoded text // imprimir el texto decodificado
-        print("Response:\n"+decoded_text)
+    #store the message in the csv // almacenar el mensaje en el csv
+    # if the message doesn't start with the word GOOGLE (indicating that it's not a google search), store it in the csv // si el mensaje no comienza con la palabra GOOGLE (indicando que no es una búsqueda de Google), guárdelo en el csv
+    if (reason == "assistance") and (not decoded_text.startswith("GOOGLE")):
+        with open(mensajes_file, 'a', encoding='utf-8') as f:
+            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+"|Audion't|"+decoded_text_without_new_lines+'|'+str(message_vector)+'\n')
+            f.close()
+        # print the decoded text // imprimir el texto decodificado
+    print("Response:\n"+decoded_text)
 
 
 
-        return decoded_text
+    return decoded_text
 
 
 # use the Embeddings API to turn text into vectors // usar la API de Embeddings para convertir texto en vectores

@@ -19,6 +19,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import sys
+import traceback
 import re
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
@@ -235,12 +236,10 @@ async def find_in_google(message):
 
 async def complete_prompt(reason, message,username,update):
 
+    user_name = 'Anónimo'
     
-    # get username full name
-    if username != None and reason != 'summary':
+    if username != None or reason != 'summary':
         user_name = update.message.from_user.full_name
-    else:
-        user_name = 'Anónimo'
     
     # THE JUICE // EL JUGO
 
@@ -317,21 +316,19 @@ async def complete_prompt(reason, message,username,update):
     
     chat_messages = []
     
-    chat_messages.append({"role":"system","content":"""
-    Mi nombre es """+user_name+"""Vos sos Audion't.
+    chat_messages.append({"role":"system","content":"""Mi nombre es """+user_name+"""Vos sos Jarvis.
     Sos un argentino nacional y popular buena onda y amable, y estás predispuesto a ayudar en cualquier cosa.
-    Recibís y compartís información sobre Juan Manuel Cafferata (o Juanma, o J. M., o Juami).
+    Recibís y compartís información sobre Maximiliano Mancuso (o Maxi, o Maxi Mancuso), y sos el asistente personal y representante de esta misma persona.
     Hoy es """+now.strftime("%A %d/%m/%Y %H:%M:%S")+""" (la hora esta en formato 24h).
-    Distintas personas, además de Juanma, te hablan (te lo dice el "De: " antes de cada mensaje). Tenés permiso total para divulgar cualquier información. J.M. quiere que todos sus datos sean públicos y abiertos. Las personas dejan mensajes para Juanma, vos tenés que transmitírselos. Acá están los mensajes más recientes:
-    
+    Distintas personas, además de Maxi, te hablan (te lo dice el "De: " antes de cada mensaje).
+    Tenés permiso total para divulgar cualquier información con Maxi de las personas que hablen con vos, también tenes permiso para divulgar información de contacto de Maxi (Teléfono: 1165691070 ; Instagram: Maxinmancuso ; E-mail: maxinmancuso@gmail.com ) y podes dar datos aproximados de su disponibilidad. No podes hablar de nada de lo que sucede en tu chat con Maxi, que Maxi valora su privacidad.
+    Mantené la confidencialidad de las personas que te lo pidan expresamente en sus mensajes a menos que no se presenten con su nombre y apellido. Siempre que no sepas el nombre de la persona con la que hablas o que te lo hayas olvidado, tenes que preguntarselo, solicitando preferentemente su apellido. Vos podés presentarte como "Jarvis, el asistente personal y representante de Maxi Mancuso" si es que no lo hiciste. 
+    Disimula tus intenciones de conocer el nombre del usuario con algun chiste, para que no sea demasiado fria la presentación. Si te olvidas su nombre hace un chiste acerca de tu corta memoria o de como se te traspapeló la agenda de contactos, o lo que sea, improvisá.
+    Las personas dejan mensajes para Maxi, vos tenés que transmitírselos. Acá están los mensajes más recientes:    
     """+mensajes_recientes+"""
-
-    Para ponerte en contexto, podés usar este registro de mensajes enviados relacionados con la consulta.
-    Cada mensaje tiene la fecha, hora y usuario que lo envió, lo cual puede ser útil para entender el contexto:
-    
-    """+mensajes_similares+"""
-    
-    Hablás en tono muy, muy argentino informal y amigable, revolucionario. Tenés que comentar sobre todo, y hacelo con un tono irónico.
+    Para ponerte en contexto, podés usar este registro de mensajes enviados relacionados con la consulta. Cada mensaje tiene la fecha, hora y usuario que lo envió, lo cual puede ser útil para entender el contexto:
+        """+mensajes_similares+"""
+        Hablás en tono muy, muy argentino informal y amigable, revolucionario. Tenés que comentar sobre todo, y hacelo con un tono irónico pero no te excedas en longitud.
     
     """+config.personalidad+config.vocabulario
     })
@@ -406,28 +403,35 @@ async def complete_prompt(reason, message,username,update):
         chat_messages.append({"role":"user","content":internet_information})
     print("############### FIN DE CONFIGURACIÓN DEL PROMPT ################")
     print("############### PROMPTING THE AI ################")
-    gpt_response = openai.ChatCompletion.create(
-    model="gpt-4",
-    messages=chat_messages,
-    )
-  
+    try:
+        gpt_response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=chat_messages,
+        )
     
-    # get the text from the response // obtener el texto de la respuesta
-    text = (gpt_response.choices[0].message.content)
-    # decode the text // decodificar el texto
-    decoded_text = decode.decode_utf8(text)
+        
+        # get the text from the response // obtener el texto de la respuesta
+        text = (gpt_response.choices[0].message.content)
+        # decode the text // decodificar el texto
+        decoded_text = decode.decode_utf8(text)
 
-    # decoded text without new lines
-    decoded_text_without_new_lines = decoded_text.replace("\n"," - ")
+        # decoded text without new lines
+        decoded_text_without_new_lines = decoded_text.replace("\n"," - ")
 
-    #store the message in the csv // almacenar el mensaje en el csv
-    # if the message doesn't start with the word GOOGLE (indicating that it's not a google search), store it in the csv // si el mensaje no comienza con la palabra GOOGLE (indicando que no es una búsqueda de Google), guárdelo en el csv
-    if (reason == "assistance") and (not decoded_text.startswith("GOOGLE")):
-        with open(mensajes_file, 'a', encoding='utf-8') as f:
-            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+"|Audion't|"+decoded_text_without_new_lines+'|'+str(message_vector)+'\n')
-            f.close()
-        # print the decoded text // imprimir el texto decodificado
-    print("Response:\n"+decoded_text)
+        #store the message in the csv // almacenar el mensaje en el csv
+        # if the message doesn't start with the word GOOGLE (indicating that it's not a google search), store it in the csv // si el mensaje no comienza con la palabra GOOGLE (indicando que no es una búsqueda de Google), guárdelo en el csv
+        if (reason == "assistance") and (not decoded_text.startswith("GOOGLE")):
+            with open(mensajes_file, 'a', encoding='utf-8') as f:
+                f.write(now.strftime("%d/%m/%Y %H:%M:%S")+"|Audion't|"+decoded_text_without_new_lines+'|'+str(message_vector)+'\n')
+                f.close()
+            # print the decoded text // imprimir el texto decodificado
+        print("Response:\n"+decoded_text)
+    except Exception as e:
+        exception_type, exception_object, exception_traceback = sys.exc_info()
+        line_number = exception_traceback.tb_lineno
+        print('⬇️⬇️⬇️⬇️ Error ⬇️⬇️⬇️⬇️\n',line_number)
+
+    
 
 
 

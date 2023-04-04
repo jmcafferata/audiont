@@ -163,7 +163,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         exception_type, exception_object, exception_traceback = sys.exc_info()
         line_number = exception_traceback.tb_lineno
-        print('⬇️⬇️⬇️⬇️ Error en todo ⬇️⬇️⬇️⬇️\n',line_number)
+        print('⬇️⬇️⬇️⬇️ Error ⬇️⬇️⬇️⬇️\n',line_number)
           
     return
 

@@ -21,9 +21,32 @@ from bs4 import BeautifulSoup
 import sys
 import traceback
 import re
+import csv
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
 openai.api_key = config.openai_api_key
+
+
+def embed_and_store(object):
+
+    fields = [key for key in object.keys() if key != 'service']
+    fields.append('embedding')
+    file_name = object['service'].lower() + ".csv"
+    formatted_text = ' | '.join([str(value) for value in object.values()])
+    object_embedding = get_embedding(formatted_text, 'text-embedding-ada-002')
+    object['embedding'] = object_embedding
+    #remove the service key from the object
+    del object['service']
+
+    with open(file_name, 'a', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fields,delimiter='|')
+
+        # Check if the file is empty to write the header only once
+        if csvfile.tell() == 0:
+            writer.writeheader()
+
+        # Write the object (now containing the embedding) to the CSV file
+        writer.writerow(object)
 
 
 
@@ -31,6 +54,7 @@ def check_and_compute_cosine_similarity(x, message_vector):
     x = np.array(literal_eval(x), dtype=np.float64)  # Convert x to float64
     return cosine_similarity(x, message_vector)
 
+################## GOOGLE SEARCH ############################
 
 def get_chunks(url,text):
    
@@ -85,9 +109,6 @@ def get_chunks(url,text):
 
     return summary_chunks
  
-
-        
-
 def google(query,message):
     # delete anything that comes after a \n
     query = re.sub(r"\\n.*", "", query)
@@ -163,8 +184,23 @@ def google(query,message):
     
     return chunks_and_links
 
+async def find_in_google(message):
     
+    print("About to ask GPT-3 for a query to search in Google for the following task:\n"+message)
+    # get latest message from the user
+    gpt_response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role":"user","content":"Create the perfect google query to get information for the following task:\n"+message}]
+        )
+    gpt_response = gpt_response.choices[0].message.content
+    print("################ GPT-3 response ############",gpt_response)
+    querychunks_and_links = google(gpt_response,message)
+    results_chunks = ""
+    for chunk in querychunks_and_links:
+        results_chunks += chunk["chunks"]+"\n"
+    return results_chunks
 
+################### AUDIO TRANSCRIPTION ############################
 
 # use the OpenAI API to get the text from the audio file // usar la API de OpenAI para obtener el texto del archivo de audio 
 async def transcribe_audio(update):
@@ -215,24 +251,147 @@ async def transcribe_audio(update):
             return transcription_object["text"]
 
 
+################### v2 ############################
 
-async def find_in_google(message):
-    
-    print("About to ask GPT-3 for a query to search in Google for the following task:\n"+message)
-    # get latest message from the user
-    gpt_response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role":"user","content":"Create the perfect google query to get information for the following task:\n"+message}]
+def get_top_entries(db, query):
+
+    with open(db, 'rb') as f:
+        csv_str = f.read()
+    entries_df = pd.read_csv(StringIO(csv_str.decode('utf-8')), sep='|', encoding='utf-8', escapechar='\\')
+    query_vector = get_embedding(query, 'text-embedding-ada-002')
+
+    entries_df['similarity'] = entries_df['embedding'].apply(lambda x: check_and_compute_cosine_similarity(x, query_vector))
+
+    # sort by similarity
+    entries_df = entries_df.sort_values(by=['similarity'], ascending=False)
+
+    # Initialize a string with the df headers
+    similar_entries = ' | '.join(entries_df.columns) + '\n'
+
+    # Iterate over the rows of the DataFrame
+    for index, row in entries_df.head(15).iterrows():
+        # Drop the 'embedding' and 'similarity' columns
+        row = row.drop(['embedding', 'similarity'])
+        # Convert the row to a string and join the values using '|'
+        row_str = ' | '.join(map(str, row.values))
+        # Append the row string to 'similar_entries' followed by a newline character
+        similar_entries += row_str + '\n'
+
+    return similar_entries
+
+
+   
+async def interpret(message, key,instructions, personality):
+
+    now = datetime.now(timezone)
+
+    gpt_response_objects = []
+
+    # modo chat
+    if key == "chat3" or key == "chat4":
+
+        print("################# ENTERING CHAT MODE #################")
+
+        # get 10 most recent messages from chat.csv
+        chat_df = pd.read_csv('chat.csv', sep='|', encoding='utf-8', escapechar='\\')
+        chat_df = chat_df.tail(10)
+        # for each message, get the role and content
+        prompt = []
+        prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")})
+        for index, row in chat_df.iterrows():
+            prompt.append({"role": row['role'], "content": row['content']})
+        prompt.append({"role": "user", "content": message})
+        if instructions == "chat3":
+            model = "gpt-3.5-turbo"
+        else:
+            model = "gpt-4"
+        gpt_response = openai.ChatCompletion.create(
+            model=model,
+            messages=prompt,
         )
-    gpt_response = gpt_response.choices[0].message.content
-    print("################ GPT-3 response ############",gpt_response)
-    querychunks_and_links = google(gpt_response,message)
-    results_chunks = ""
-    for chunk in querychunks_and_links:
-        results_chunks += chunk["chunks"]+"\n"
-    return results_chunks
-    
+        print("################ CHAT response ############", gpt_response.choices[0].message.content)
+        #store the message on chat.csv. make sure you replace the new lines with spaces
+        with open('chat.csv', 'a', encoding='utf-8') as f:
+            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ')+'\n')
+        # store the response on chat.csv but replace new lines with \n
+        with open('chat.csv', 'a', encoding='utf-8') as f:
+            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|system|' + gpt_response.choices[0].message.content.replace('\n', ' ') + '\n')
+        # create a list of strings with the response
+        gpt_response_strings = []
+        gpt_response_strings.append(gpt_response.choices[0].message.content)
+        return gpt_response_strings
 
+    # modo asistente 
+    else:
+        print("################# ENTERING ASSISTANT MODE #################")
+
+        prompt = [{"role": "system", "content": instructions + "\n Today is " + now.strftime("%d/%m/%Y %H:%M:%S")},
+                {"role": "user", "content": message}]
+
+        # esto devuelve un JSON o un list de JSONs
+        gpt_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=prompt,
+            temperature=0.2,
+        )
+
+        print("################ GPT-3.5 response ############", gpt_response.choices[0].message.content)
+
+        # check if the response string contains a JSON, a list of JSONs or something else
+        if gpt_response.choices[0].message.content.startswith('{'):
+            # if it's a single JSON, convert it to a list of JSONs
+            gpt_response_objects.append(json.loads(gpt_response.choices[0].message.content))
+        elif gpt_response.choices[0].message.content.startswith('['):
+            # if it's a list of JSONs, convert it to a list of JSONs
+            gpt_response_objects = json.loads(gpt_response.choices[0].message.content)
+        else:
+            # if it's something else, just return the response string
+            gpt_response_strings = []
+            gpt_response_strings.append(gpt_response.choices[0].message.content)
+            return gpt_response_strings
+        # now the gpt_response_objects is a list of dicts
+        for object in gpt_response_objects:
+
+            service = object["service"]
+
+            if service == "QUERY":
+                print("################ QUERY ############")
+                similar_entries = ''
+                query = message
+                for db in object["databases"]:
+                    if not db.endswith(".csv"):
+                        db += ".csv"
+                    similar_entries += get_top_entries(db, query)
+                print("################ PROMPTING GPT-4 ############")
+                gpt4_response = openai.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[{"role": "system", "content": personality}, {"role": "user", "content": f"""According to the following data from my personal csv databases:
+
+                {similar_entries}
+
+                {query}"""}]
+                )
+                gpt4_response_text = gpt4_response.choices[0].message.content
+
+                print("################ GPT-4 response ############", gpt4_response_text)
+                return gpt4_response_text
+
+            else:
+                print("################ STORING ############")
+                embed_and_store(object)
+                gpt_string = ""
+
+                for key in object:
+                    if key != 'service' and key != 'embedding':
+                        gpt_string += str(object[key]) + "\n"
+
+                # let the user know that the message was stored
+                gpt_string += "\n Agregado a " + service + ".csv"
+
+            return gpt_string
+
+
+################### v1 ############################
 
 async def complete_prompt(reason, message,username,update):
 
@@ -262,7 +421,7 @@ async def complete_prompt(reason, message,username,update):
     print('message vectorized')
 
     # store the message in a csv file
-    if reason != 'instructions' :
+    if reason != 'answer' :
 
         with open(mensajes_file, 'a', encoding='utf-8') as f:
             # escape | characters in the message with \ character
@@ -285,7 +444,6 @@ async def complete_prompt(reason, message,username,update):
     # sort by similarity
     mensajes_sim = mensajes_sim.sort_values(by=['similarity'], ascending=False)
 
-    print(mensajes_sim)
     print('################## MENSAJES SIMILARES ##################')
 
 
@@ -317,18 +475,14 @@ async def complete_prompt(reason, message,username,update):
     chat_messages = []
     
     chat_messages.append({"role":"system","content":"""Mi nombre es """+user_name+"""Vos sos Jarvis.
-    Sos un argentino nacional y popular buena onda y amable, y estás predispuesto a ayudar en cualquier cosa.
+    
     Recibís y compartís información sobre Maximiliano Mancuso (o Maxi, o Maxi Mancuso), y sos el asistente personal y representante de esta misma persona.
     Hoy es """+now.strftime("%A %d/%m/%Y %H:%M:%S")+""" (la hora esta en formato 24h).
-    Distintas personas, además de Maxi, te hablan (te lo dice el "De: " antes de cada mensaje).
-    Tenés permiso total para divulgar cualquier información con Maxi de las personas que hablen con vos, también tenes permiso para divulgar información de contacto de Maxi (Teléfono: 1165691070 ; Instagram: Maxinmancuso ; E-mail: maxinmancuso@gmail.com ) y podes dar datos aproximados de su disponibilidad. No podes hablar de nada de lo que sucede en tu chat con Maxi, que Maxi valora su privacidad.
-    Mantené la confidencialidad de las personas que te lo pidan expresamente en sus mensajes a menos que no se presenten con su nombre y apellido. Siempre que no sepas el nombre de la persona con la que hablas o que te lo hayas olvidado, tenes que preguntarselo, solicitando preferentemente su apellido. Vos podés presentarte como "Jarvis, el asistente personal y representante de Maxi Mancuso" si es que no lo hiciste. 
-    Disimula tus intenciones de conocer el nombre del usuario con algun chiste, para que no sea demasiado fria la presentación. Si te olvidas su nombre hace un chiste acerca de tu corta memoria o de como se te traspapeló la agenda de contactos, o lo que sea, improvisá.
-    Las personas dejan mensajes para Maxi, vos tenés que transmitírselos. Acá están los mensajes más recientes:    
+    
     """+mensajes_recientes+"""
     Para ponerte en contexto, podés usar este registro de mensajes enviados relacionados con la consulta. Cada mensaje tiene la fecha, hora y usuario que lo envió, lo cual puede ser útil para entender el contexto:
         """+mensajes_similares+"""
-        Hablás en tono muy, muy argentino informal y amigable, revolucionario. Tenés que comentar sobre todo, y hacelo con un tono irónico pero no te excedas en longitud.
+        
     
     """+config.personalidad+config.vocabulario
     })
@@ -365,7 +519,7 @@ async def complete_prompt(reason, message,username,update):
         """})
 
         
-    elif (reason == "instructions"):
+    elif (reason == "answer"):
        
         chat_messages.append({"role":"user","content":"""
         Me acaban de enviar un mensaje de voz. Dice lo siguiente:
@@ -401,6 +555,9 @@ async def complete_prompt(reason, message,username,update):
         "\nUsá la siguiente información para responder el mensaje:\n\n"
         })
         chat_messages.append({"role":"user","content":internet_information})
+
+
+
     print("############### FIN DE CONFIGURACIÓN DEL PROMPT ################")
     print("############### PROMPTING THE AI ################")
     try:
@@ -437,6 +594,7 @@ async def complete_prompt(reason, message,username,update):
 
     return decoded_text
 
+################## EMBEDDINGS ##################
 
 # use the Embeddings API to turn text into vectors // usar la API de Embeddings para convertir texto en vectores
 def generate_embeddings(file,column_to_embed):

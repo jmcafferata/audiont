@@ -56,116 +56,155 @@ from bs4 import BeautifulSoup
 from openai.embeddings_utils import get_embedding
 from openai.embeddings_utils import cosine_similarity
 import traceback
+import json
+from telegram.constants import ParseMode
+
+# get the instructions from json file data.json
+
+def get_instructions():
+    with open('data.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    key = data['instructions']
+    instructions = read_data_from_csv(key=key, filename="instructions.csv")
+    personality = read_data_from_csv(key="personalidad", filename="instructions.csv")
+    return instructions, personality, key
+
+def escape_markdown_v2(text):
+    # List of special characters that need to be escaped in Markdown V2
+    special_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    
+    # Escape each special character with a preceding backslash
+    escaped_text = ''.join(['\\' + char if char in special_chars else char for char in text])
+    return escaped_text
 
 
-# logging.basicConfig(level=logging.DEBUG,
-#                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# logger = logging.getLogger(__name__)
+# read key-value pairs from csv file // leer pares clave-valor de un archivo csv
+def read_data_from_csv(key: str, filename: str) -> dict:
+    with open(filename, 'r', encoding='utf-8') as f:
+        reader = csv.reader(f, delimiter='|')
+        for row in reader:
+            if row[0].strip() == key.strip():
+                # return the value of the key // devolver el valor de la clave
+                return row[1]
+    # return None if the key is not found // devolver None si la clave no se encuentra
+    return None
+
+# replace key-value pairs in csv file // reemplazar pares clave-valor en un archivo csv
+def update_data_file(key: str, value: str, filename: str) -> None:
+    with open(filename, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    data[key] = value
+
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False)
+
 
 # CONTANTS // CONSTANTES
 
 # define the states of the conversation // definir los estados de la conversación
 ASK_NAME, ASK_DESCRIPTION,ASK_MESSAGES,AWAIT_INSTRUCTIONS,ASK_MORE_MESSAGES,ASK_PAYEE,CONFIRM_PAYMENT = range(7)
 
-# function that handles the audio files // función principal que maneja los archivos de audio
+# define the bot instructions
 
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
+    # TODO: replace newlines with \n when storing to csv // reemplazar los saltos de línea con \n al almacenar en csv
 
-async def handle_audio(update, context):
-    # check if username in config.subscribers // verificar si el username está en config.subscribers
-    if update.message.from_user.username not in config.subscribers:
-        # call the transcribe_audio function // llamar a la función transcribe_audio
-        
-        try:
-            transcription = await ai.transcribe_audio(update)
-            # if there's an error send a message // si hay un error enviar un mensaje
-        except:
-            pass
+    text = update.message.text
+
+    await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
+
+    instructions, personality, key = get_instructions()
+
+    try:
+        gpt_string_responses = await ai.interpret(message=text,key=key,instructions=instructions,personality=personality)
+    
+        print('################# SENDING MESSAGE #################')
+        response_text = ''
+        # if the response is an array, send each element of the array as a message // si la respuesta es un array, enviar cada elemento del array como un mensaje
+        if isinstance(gpt_string_responses, list):
+            for i in gpt_string_responses:
+                response_text = response_text + i + '\n'
         else:
-            csvm.store_to_csv(message=transcription)
-            # reply to the message with the text extracted from the audio file // responder al mensaje con el texto extraído del archivo de audio
-            await update.message.reply_text("El audio dice:")
-            await update.message.reply_text(transcription)
-            
-            # call the prompt function // llamar a la función prompt
-            response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username,update=update)
-            # call the clean_options function // llamar a la función clean_options
-            response_text, options = await clean.clean_options(response)
-            # reply to the message with the summary and the 5 options // responder al mensaje con el resumen y las 5 opciones
-            await update.message.reply_text(response_text, reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(text=options[0], callback_data="0")
-                    ],
-                    [
-                        InlineKeyboardButton(text=options[1], callback_data="1")
-                    ],
-                    [
-                        InlineKeyboardButton(text=options[2], callback_data="2")
-                    ],
-                    [
-                        InlineKeyboardButton(text=options[3], callback_data="3")
-                    ]
-                ]
-            ))
-            return AWAIT_INSTRUCTIONS            
-    else:
-        await subs.sendSubscribeMessage(update)
+            response_text = gpt_string_responses
+        
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=response_text)
+
+        return
+    except Exception as e:
+        # print and send the formatted traceback // imprimir y enviar el traceback formateado
+        traceback.print_exc()
+        await update.message.reply_text(traceback.format_exc())
+        
 
 # function that handles the voice notes // función principal que maneja las notas de voz
 async def handle_voice(update, context):
-    # check if username in config.subscribers // verificar si el username está en config.subscribers
-    if update.message.from_user.username not in config.subscribers:
-        # call the transcribe_audio function // llamar a la función transcribe_audio
-        try:
-            transcription = await ai.transcribe_audio(update)
-            response = await ai.complete_prompt(reason="assistance", message=transcription, username=update.message.from_user.username,update=update)
-            
-            await update.message.reply_text(response)
-        except Exception as e:
-            print('Algo falló. \n'+str(e))
-            await update.message.reply_text('Algo falló. \n'+str(e))
-            pass
-    else:
-        await subs.sendSubscribeMessage(update)
+    # call the transcribe_audio function // llamar a la función transcribe_audio
+    try:
+        transcription = await ai.transcribe_audio(update)
+        instructions, personality, key = get_instructions()
+        response = await ai.interpret(message=transcription, key=key, instructions=instructions, personality=personality)
+        
+        await update.message.reply_text(response)
+    except Exception as e:
+        # print and send the formatted traceback // imprimir y enviar el traceback formateado
+        traceback.print_exc()
+        await update.message.reply_text(traceback.format_exc())
+   
     return ConversationHandler.END
+
+async def handle_audio(update, context):
+    # call the transcribe_audio function // llamar a la función transcribe_audio
+        
+    try:
+        transcription = await ai.transcribe_audio(update)
+        # if there's an error send a message // si hay un error enviar un mensaje
+    except:
+        pass
+    else:
+        csvm.store_to_csv(message=transcription)
+        # reply to the message with the text extracted from the audio file // responder al mensaje con el texto extraído del archivo de audio
+        await update.message.reply_text("El audio dice:")
+        await update.message.reply_text(transcription)
+        
+        # call the prompt function // llamar a la función prompt
+        response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username,update=update)
+        # call the clean_options function // llamar a la función clean_options
+        response_text, options = await clean.clean_options(response)
+        # reply to the message with the summary and the 5 options // responder al mensaje con el resumen y las 5 opciones
+        await update.message.reply_text(response_text, reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(text=options[0], callback_data="0")
+                ],
+                [
+                    InlineKeyboardButton(text=options[1], callback_data="1")
+                ],
+                [
+                    InlineKeyboardButton(text=options[2], callback_data="2")
+                ],
+                [
+                    InlineKeyboardButton(text=options[3], callback_data="3")
+                ]
+            ]
+        ))
+        return AWAIT_INSTRUCTIONS            
+ 
 
 # function that handles the voice notes when responding to a voice note // función principal que maneja las notas de voz cuando se responde a una nota de voz
 async def respond_audio(update, context):
-    # check if username in config.subscribers // verificar si el username está en config.subscribers
-    if update.message.from_user.username not in config.subscribers:
-        # call the transcribe_audio function // llamar a la función transcribe_audio
-        transcription = await ai.transcribe_audio(update)
-        response = await ai.complete_prompt(reason="instructions", message=transcription, username=update.message.from_user.username,update=update)
-        await update.message.reply_text(response)
-        return ConversationHandler.END
-    else:
-        await subs.sendSubscribeMessage(update)
-
+    # call the transcribe_audio function // llamar a la función transcribe_audio
+    transcription = await ai.transcribe_audio(update)
+    response = await ai.complete_prompt(reason="answer", message=transcription, username=update.message.from_user.username,update=update)
+    await update.message.reply_text(response)
+    return ConversationHandler.END
+   
 # handles when the bot receives something that is not a command // maneja cuando el bot recibe algo que no es un comando
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await context.bot.send_message(chat_id=update.effective_chat.id, text="No entiendo ese comando.")
 
-async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # remove any newlines from the text // eliminar cualquier salto de línea del texto
-    text = update.message.text.replace('\n', ' ')
-    await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
-
-    try:
-        response = await ai.complete_prompt("assistance", text, update.message.from_user.username,update)
-        
-        await context.bot.send_message(chat_id=update.effective_chat.id,text=response)
-        print('sending message')
-    
-        
-
-    except Exception as e:
-        exception_type, exception_object, exception_traceback = sys.exc_info()
-        line_number = exception_traceback.tb_lineno
-        print('⬇️⬇️⬇️⬇️ Error ⬇️⬇️⬇️⬇️\n',line_number)
-          
-    return
 
 # Function to handle files
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -208,7 +247,6 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Send a confirmation message to the user
     await update.message.reply_text("Archivo y descripción guardados correctamente.")
 
-
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get the data from the callback query // obtener los datos de la consulta de devolución de llamada
     data = update.callback_query.data
@@ -239,7 +277,28 @@ async def google(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
     
+async def modo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
+    data = ''
+    for arg in context.args:
+        data = data + arg + " "
+    data = data.strip()
+    print("Data: "+data)
+    # if the data is a number, then it's an instruction // si los datos son un número, entonces es una instrucción
+    try:
+        instructions = read_data_from_csv(key=data,filename="instructions.csv")
+        print("Instructions: "+instructions)
+        update_data_file(key="instructions",value=data,filename="data.json")
+        print("Instructions set")
+        await update.message.reply_text("¡Listo! Ahora tengo una nueva personalidad:\n "+instructions)
+        
+    except Exception as e:
+        exception_traceback = traceback.format_exc()
+        print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n',exception_traceback)
 
+    
+    # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
+ 
 
 # main function // función principal
 if __name__ == '__main__':
@@ -273,6 +332,10 @@ if __name__ == '__main__':
     #/google command
     google_handler = CommandHandler('google', google)
     application.add_handler(google_handler)
+
+    #/google command
+    modo_handler = CommandHandler('modo', modo)
+    application.add_handler(modo_handler)
 
     # a callback query handler // un manejador de consulta de devolución de llamada
     callback_handler = CallbackQueryHandler(callback=callback)

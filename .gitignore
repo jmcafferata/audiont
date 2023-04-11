@@ -6,7 +6,5 @@ config.py
 *.ogg
 *.opus
 *.oga
-logs.csv
 users
-messages.csv
 audios.csv

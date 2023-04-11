@@ -109,28 +109,39 @@ ASK_NAME, ASK_DESCRIPTION,ASK_MESSAGES,AWAIT_INSTRUCTIONS,ASK_MORE_MESSAGES,ASK_
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    # TODO: replace newlines with \n when storing to csv // reemplazar los saltos de línea con \n al almacenar en csv
-
-    text = update.message.text
-
+    
     await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
 
-    instructions, personality, key = get_instructions()
-
     try:
-        gpt_string_responses = await ai.interpret(message=text,key=key,instructions=instructions,personality=personality)
-    
-        print('################# SENDING MESSAGE #################')
-        response_text = ''
-        # if the response is an array, send each element of the array as a message // si la respuesta es un array, enviar cada elemento del array como un mensaje
-        if isinstance(gpt_string_responses, list):
-            for i in gpt_string_responses:
-                response_text = response_text + i + '\n'
-        else:
-            response_text = gpt_string_responses
-        
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=response_text)
 
+        response = None # Initialize the 'response' variable here
+        
+        instructions, personality, key = get_instructions()
+    
+        # get sender username
+        username = update.message.from_user.username
+        #get sender full name
+        full_name = update.message.from_user.full_name
+
+        #if sender isn't jmcafferata
+        if username != "jmcafferata":
+            response = await ai.secretary(update)
+
+        else:
+            if key == "chat3":
+                # call the chat function // llamar a la función chat
+                response = await ai.chat(update,update.message.text,"3", personality)
+            elif key == "chat4":
+                # call the chat function // llamar a la función chat
+                response = await ai.chat(update,update.message.text,"4",personality)
+            elif key == "crud":
+
+                response = await ai.crud(update, update.message.text)
+        
+        print('################# SENDING MESSAGE #################')
+        await update.message.reply_text(response)
+        # if the response is an array, send each element of the array as a message // si la respuesta es un array, enviar cada elemento del array como un mensaje
+        
         return
     except Exception as e:
         # print and send the formatted traceback // imprimir y enviar el traceback formateado
@@ -140,21 +151,54 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # function that handles the voice notes // función principal que maneja las notas de voz
 async def handle_voice(update, context):
+    
+    await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
+
     # call the transcribe_audio function // llamar a la función transcribe_audio
     try:
         transcription = await ai.transcribe_audio(update)
-        instructions, personality, key = get_instructions()
-        response = await ai.interpret(message=transcription, key=key, instructions=instructions, personality=personality)
+
+        response = None # Initialize the 'response' variable here
         
+        instructions, personality, key = get_instructions()
+    
+        # get sender username
+        username = update.message.from_user.username
+        #get sender full name
+        full_name = update.message.from_user.full_name
+
+        #if sender isn't jmcafferata
+        if username != "jmcafferata":
+            response = await ai.secretary(update)
+
+        else:
+            if key == "chat3":
+                # call the chat function // llamar a la función chat
+                response = await ai.chat(update,transcription,"3",personality)
+            elif key == "chat4":
+                # call the chat function // llamar a la función chat
+                response = await ai.chat(update,transcription,"4",personality)
+            elif key == "crud":
+
+                response = await ai.crud(update, transcription)
+        
+        print('################# SENDING MESSAGE #################')
         await update.message.reply_text(response)
+        # if the response is an array, send each element of the array as a message // si la respuesta es un array, enviar cada elemento del array como un mensaje
+        
+        return
     except Exception as e:
         # print and send the formatted traceback // imprimir y enviar el traceback formateado
         traceback.print_exc()
         await update.message.reply_text(traceback.format_exc())
-   
+        
     return ConversationHandler.END
 
 async def handle_audio(update, context):
+
+    await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
+
+    instructions, personality, key = get_instructions()
     # call the transcribe_audio function // llamar a la función transcribe_audio
         
     try:
@@ -169,7 +213,7 @@ async def handle_audio(update, context):
         await update.message.reply_text(transcription)
         
         # call the prompt function // llamar a la función prompt
-        response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username,update=update)
+        response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username,update=update,personality=personality)
         # call the clean_options function // llamar a la función clean_options
         response_text, options = await clean.clean_options(response)
         # reply to the message with the summary and the 5 options // responder al mensaje con el resumen y las 5 opciones
@@ -194,9 +238,10 @@ async def handle_audio(update, context):
 
 # function that handles the voice notes when responding to a voice note // función principal que maneja las notas de voz cuando se responde a una nota de voz
 async def respond_audio(update, context):
+    instructions, personality, key = get_instructions()
     # call the transcribe_audio function // llamar a la función transcribe_audio
     transcription = await ai.transcribe_audio(update)
-    response = await ai.complete_prompt(reason="answer", message=transcription, username=update.message.from_user.username,update=update)
+    response = await ai.complete_prompt(reason="answer", message=transcription, username=update.message.from_user.username,update=update,personality=personality)
     await update.message.reply_text(response)
     return ConversationHandler.END
    
@@ -248,15 +293,18 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Archivo y descripción guardados correctamente.")
 
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    instructions, personality, key = get_instructions()
     # get the data from the callback query // obtener los datos de la consulta de devolución de llamada
     data = update.callback_query.data
     print("Data: "+data)
     # if the data is a number, then it's an instruction // si los datos son un número, entonces es una instrucción
     if data.isdigit():
-        response = await ai.complete_prompt("instructions", clean.options[int(data)], None,update)
+        response = await ai.complete_prompt("answer", clean.options[int(data)], update.callback_query.from_user.username, update, personality)
         # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
         await update.callback_query.message.reply_text(response)
         await update.callback_query.message.reply_text("🥲 Si no te gustó la respuesta, podés mandarme una nota de voz con instrucciones 🗣️ o apretar otro botón.")
+        return AWAIT_INSTRUCTIONS
     
 async def google(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
@@ -296,8 +344,44 @@ async def modo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         exception_traceback = traceback.format_exc()
         print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n',exception_traceback)
 
-    
-    # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
+async def chat3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
+    try:
+        instructions = read_data_from_csv(key="chat3",filename="instructions.csv")
+        print("Instructions: "+instructions)
+        update_data_file(key="instructions",value="chat3",filename="data.json")
+        print("Instructions set")
+        await update.message.reply_text("¡Listo! Ahora tengo una nueva personalidad:\n "+instructions)
+        
+    except Exception as e:
+        exception_traceback = traceback.format_exc()
+        print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n',exception_traceback)
+
+async def chat4(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
+    try:
+        instructions = read_data_from_csv(key="chat4",filename="instructions.csv")
+        print("Instructions: "+instructions)
+        update_data_file(key="instructions",value="chat4",filename="data.json")
+        print("Instructions set")
+        await update.message.reply_text("¡Listo! Ahora tengo una nueva personalidad:\n "+instructions)
+        
+    except Exception as e:
+        exception_traceback = traceback.format_exc()
+        print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n',exception_traceback)
+
+async def crud(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
+    try:
+        instructions = read_data_from_csv(key="crud",filename="instructions.csv")
+        print("Instructions: "+instructions)
+        update_data_file(key="instructions",value="crud",filename="data.json")
+        print("Instructions set")
+        await update.message.reply_text("¡Listo! Ahora tengo una nueva personalidad:\n "+instructions)
+        
+    except Exception as e:
+        exception_traceback = traceback.format_exc()
+        print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n',exception_traceback)
  
 
 # main function // función principal
@@ -336,6 +420,18 @@ if __name__ == '__main__':
     #/google command
     modo_handler = CommandHandler('modo', modo)
     application.add_handler(modo_handler)
+
+    #/chat3 command
+    chat3_handler = CommandHandler('chat3', chat3)
+    application.add_handler(chat3_handler)
+
+    #/chat4 command
+    chat4_handler = CommandHandler('chat4', chat4)
+    application.add_handler(chat4_handler)
+
+    crud_handler = CommandHandler('crud', crud)
+    application.add_handler(crud_handler)
+
 
     # a callback query handler // un manejador de consulta de devolución de llamada
     callback_handler = CallbackQueryHandler(callback=callback)

@@ -61,6 +61,8 @@ from telegram.constants import ParseMode
 
 # get the instructions from json file data.json
 
+
+
 def get_instructions():
     with open('data.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -124,8 +126,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         full_name = update.message.from_user.full_name
 
         #if sender isn't jmcafferata
-        if username != "jmcafferata":
-            response = await ai.secretary(update)
+        if username != my_username:
+            response = await ai.secretary(update,update.message.text, personality,context)
+           
 
         else:
             if key == "chat3":
@@ -137,9 +140,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             elif key == "crud":
 
                 response = await ai.crud(update, update.message.text,context)
+            await update.message.reply_text(response)
         
-        print('################# SENDING MESSAGE #################')
-        await update.message.reply_text(response)
+        
         # if the response is an array, send each element of the array as a message // si la respuesta es un array, enviar cada elemento del array como un mensaje
         
         return
@@ -167,9 +170,10 @@ async def handle_voice(update, context):
         #get sender full name
         full_name = update.message.from_user.full_name
 
-        #if sender isn't jmcafferata
-        if username != "jmcafferata":
-            response = await ai.secretary(update)
+         #if sender isn't jmcafferata
+        if username != my_username:
+            response = await ai.secretary(update,transcription, personality,context)
+            await update.message.reply_text(response)
 
         else:
             if key == "chat3":
@@ -200,6 +204,14 @@ async def handle_voice(update, context):
 
 async def handle_audio(update, context):
 
+    #get username and name
+    username = update.message.from_user.username
+    full_name = update.message.from_user.full_name
+    #check if username is none  
+    if username == None:
+        username = full_name
+    
+
     await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
 
     instructions, personality, key = get_instructions()
@@ -211,6 +223,12 @@ async def handle_audio(update, context):
     except:
         pass
     else:
+        if username != my_username:
+            #send transcription to user and end
+            await update.message.reply_text("El audio dice:")
+            await update.message.reply_text(transcription)
+            return
+
         csvm.store_to_csv(message=transcription)
         # reply to the message with the text extracted from the audio file // responder al mensaje con el texto extraído del archivo de audio
         await update.message.reply_text("El audio dice:")
@@ -390,6 +408,8 @@ async def crud(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # main function // función principal
 if __name__ == '__main__':
+
+    my_username = config.my_username
 
     # create the bot // crear el bot
     application = Application.builder().token(config.telegram_api_key).build()

@@ -324,8 +324,9 @@ async def secretary(update,message,personality,context):
     full_name = update.message.from_user.full_name
     #embed and store the message in db/messages.csv
     message_vector = get_embedding(message, 'text-embedding-ada-002')
+
     with open('db/messages.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message.replace('\n', ' ')+'|'+str(message_vector)+'\n')
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message.replace('\n', ' ')+'|'+str(message_vector)+'|'+str(generate('0123456789', 5))+'\n')
     
     #get top entries from db/notes.csv
     related_notes = get_top_entries('db/notes.csv', message, 10)
@@ -385,7 +386,7 @@ async def crud(update,message,context):
         #open it
         with open(os.path.join('./db/', csv_file), 'r') as f:
             csv_reader = csv.reader(f, delimiter='|')
-
+            print("csv_file: " + csv_file)
             # get the first two lines
             header = next(csv_reader)
             try:
@@ -442,6 +443,7 @@ async def crud(update,message,context):
             database_info += 'Header: ' + header + '\n'
             
              # get the database similar rows
+            print("database_name: ",database_name)
             similar_entries = get_top_entries(database_name, database_command, 7)
             #truncate the string to 2300 characters
             similar_entries = similar_entries[:1000]

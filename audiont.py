@@ -194,10 +194,9 @@ async def handle_voice(update, context):
         
         return
     except Exception as e:
+        traceback = traceback[:79]
         # print and send the formatted traceback // imprimir y enviar el traceback formateado
         traceback.print_exc()
-        #truncate the traceback to the first 79 characters
-        traceback = traceback[:79]
         await update.message.reply_text(traceback.format_exc())
         
     return ConversationHandler.END

@@ -23,6 +23,8 @@ import traceback
 import re
 import csv
 from nanoid import generate
+import asyncio
+from telegram.error import BadRequest
 
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
@@ -314,7 +316,7 @@ async def chat(update,message,model,personality):
 
 
 
-async def crud(update,message):
+async def crud(update,message,context):
 
     now = datetime.now()
     
@@ -385,9 +387,12 @@ async def crud(update,message):
                 
             # get the header
             header = lines[0].strip()
+            database_info += 'Header: ' + header + '\n'
             
              # get the database similar rows
-            similar_entries = get_top_entries(database_name, database_command, 5)
+            similar_entries = get_top_entries(database_name, database_command, 7)
+            #truncate the string to 2300 characters
+            similar_entries = similar_entries[:1000]
             database_info += similar_entries + '\n'
         print("database_info: \n",database_info)
 
@@ -448,20 +453,46 @@ async def crud(update,message):
                     return "Added:\n" + row_data_string + "\n to database " + command["database"]
                 elif command["operation"] == "read":
                     print("reading: " + str(command))
-                    similarity_results = get_top_entries(os.path.join('./db/', ensure_csv_extension(command['database'])), message, 5)
+                    similarity_results = get_top_entries(os.path.join('./db/', ensure_csv_extension(command['database'])), message, 7)
                     step_three_instructions = read_data_from_csv('step-three', 'instructions.csv')
                     prompt = []
                     prompt.append({"role": "system", "content": step_three_instructions})
                     prompt.append({"role": "user", "content": message})
                     prompt.append({"role": "user", "content": "Use this data to write the response with UTF-8 encoding:\n" + similarity_results})
                     step_three_response = openai.ChatCompletion.create(
-                        model="gpt-3.5-turbo",
+                        model="gpt-4",
                         messages=prompt,
                         temperature=0.8,
+                        stream=True
                     )
-                    step_three_response_string = step_three_response.choices[0].message.content
-                    print("step_three_response: " + step_three_response_string)
-                    return step_three_response_string
+                    # create variables to collect the stream of chunks
+
+
+                    collected_chunks = []
+                    collected_messages = []
+                    # iterate through the stream of events
+                    new_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="Respuesta:\n")
+                    current_text = ''
+                    for chunk in step_three_response:
+                        collected_chunks.append(chunk)  # save the event response
+                        chunk_dict = chunk['choices'][0]['delta']  # extract the message
+                        chunk_message = chunk_dict.get('content')  # extract the message text
+
+                        if chunk_message is not None:
+                            collected_messages.append(chunk_message)  # save the message
+                            print("chunk_message: ", chunk_message)
+                            legible_text = ''.join(collected_messages)
+                            if legible_text != current_text:
+                                # Edit the message with the concatenated response text
+                                try:
+                                    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=new_message.message_id, text=legible_text)
+                                    current_text = legible_text
+                                    # await asyncio.sleep(0.1)  # Add a small delay before editing the message again
+                                except BadRequest as e:
+                                    if 'Message is not modified' not in str(e):
+                                        raise e
+                    
+
                 elif command["operation"] == "update":
                     # todo: update an entry
                     print("updating: " + str(command))

@@ -125,7 +125,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         #get sender full name
         full_name = update.message.from_user.full_name
 
-        #if sender isn't jmcafferata
+        #check if username aint empty
+        if username == None:
+            username = full_name
+
+        #if sender isn't owner
         if username != my_username:
             response = await ai.secretary(update,update.message.text, personality,context)
            
@@ -141,13 +145,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 response = await ai.crud(update, update.message.text,context)
             await update.message.reply_text(response)
-        
-        
-        # if the response is an array, send each element of the array as a message // si la respuesta es un array, enviar cada elemento del array como un mensaje
-        
+    
         return
     except Exception as e:
         # print and send the formatted traceback // imprimir y enviar el traceback formateado
+        traceback = sys.exc_info()[2]
         traceback.print_exc()
         await update.message.reply_text(traceback.format_exc())
         
@@ -169,6 +171,11 @@ async def handle_voice(update, context):
         username = update.message.from_user.username
         #get sender full name
         full_name = update.message.from_user.full_name
+
+        #check if username aint empty
+        if username == None:
+            username = full_name
+
 
          #if sender isn't jmcafferata
         if username != my_username:

@@ -13,7 +13,6 @@ import numpy as np
 from ast import literal_eval
 from datetime import datetime
 import pytz
-timezone = pytz.timezone('America/Argentina/Buenos_Aires')
 from io import StringIO
 import os
 import requests
@@ -30,6 +29,7 @@ from telegram.error import RetryAfter
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
 openai.api_key = config.openai_api_key
+timezone = pytz.timezone('America/Argentina/Buenos_Aires')
 
 def ensure_csv_extension(database_name):
     file_name, file_extension = os.path.splitext(database_name)
@@ -294,7 +294,7 @@ async def chat(update,message,model,personality):
     chat_df = chat_df.tail(10)
     # for each message, get the role and content
     prompt = []
-    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+personality})
+    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+config.personalidad})
     for index, row in chat_df.iterrows():
         prompt.append({"role": row['role'], "content": row['content']})
     prompt.append({"role": "user", "content": message})
@@ -346,7 +346,7 @@ async def secretary(update,message,personality,context):
     print("related_notes", related_notes)
     prompt = []
 
-    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+personality+"\nMantené tus respuestas a menos de 100 caracteres.\nAcá van algunas notas de "+config.my_name+" que pueden ayudar:\n"+related_notes+" \nMi nombre es "+full_name+" ("+username+")"})
+    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+config.personalidad+"\nMantené tus respuestas a menos de 100 caracteres.\nAcá van algunas notas de "+config.my_name+" que pueden ayudar:\n"+related_notes+" \nMi nombre es "+full_name+" ("+username+")"})
     #print all those values to check their type
     prompt.append({"role": "user", "content": message})
     gpt_response = openai.ChatCompletion.create(
@@ -650,7 +650,7 @@ async def complete_prompt(reason, message,username,update,personality):
     now = datetime.now(timezone)
 
     chat_messages = []
-    chat_messages.append({"role":"system","content":personality + "\n Today is " + now.strftime("%d/%m/%Y %H:%M:%S")})
+    chat_messages.append({"role":"system","content":config.personalidad + "\n Today is " + now.strftime("%d/%m/%Y %H:%M:%S")})
     
 
     if (reason == "summary"):

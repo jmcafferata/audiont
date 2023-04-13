@@ -314,6 +314,58 @@ async def chat(update,message,model,personality):
     
     return gpt_response.choices[0].message.content
 
+async def secretary(update,message,personality,context):
+    now = datetime.now()
+    username = update.message.from_user.username
+    #get username
+    if update.message.from_user.username is None:
+        username = update.message.from_user.full_name
+    #get user full name
+    full_name = update.message.from_user.full_name
+    #embed and store the message in db/messages.csv
+    message_vector = get_embedding(message, 'text-embedding-ada-002')
+    with open('db/messages.csv', 'a', encoding='utf-8') as f:
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message.replace('\n', ' ')+'|'+str(message_vector)+'\n')
+    
+    #get top entries from db/notes.csv
+    related_notes = get_top_entries('db/notes.csv', message, 10)
+    #truncate the string to 2000 characters
+    related_notes = related_notes[:2000]
+    print("related_notes", related_notes)
+    prompt = []
+
+    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+personality+"\nMantené tus respuestas a menos de 100 caracteres.\nAcá van algunas notas de "+config.my_name+" que pueden ayudar:\n"+related_notes+" \nMi nombre es "+full_name+" ("+username+")"})
+    #print all those values to check their type
+    prompt.append({"role": "user", "content": message})
+    gpt_response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=prompt,
+        stream=True
+    )
+    collected_chunks = []
+    collected_messages = []
+    # iterate through the stream of events
+    new_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="✍️✍️✍️✍️")
+    current_text = ''
+    for chunk in gpt_response:
+        collected_chunks.append(chunk)  # save the event response
+        chunk_dict = chunk['choices'][0]['delta']  # extract the message
+        chunk_message = chunk_dict.get('content')  # extract the message text
+
+        if chunk_message is not None:
+            collected_messages.append(chunk_message)  # save the message
+            print("chunk_message: ", chunk_message)
+            legible_text = ''.join(collected_messages)
+            if legible_text != current_text:
+                # Edit the message with the concatenated response text
+                try:
+                    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=new_message.message_id, text=legible_text)
+                    current_text = legible_text
+                    # await asyncio.sleep(0.1)  # Add a small delay before editing the message again
+                except BadRequest as e:
+                    if 'Message is not modified' not in str(e):
+                        raise e
+    
 
 
 async def crud(update,message,context):

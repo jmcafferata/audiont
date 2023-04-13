@@ -316,12 +316,21 @@ async def chat(update,message,model,personality):
 
 async def secretary(update,message,personality,context):
     now = datetime.now()
-    username = update.message.from_user.username
-    #get username
+
+    #check if there is a username and a full name
     if update.message.from_user.username is None:
-        username = update.message.from_user.full_name
-    #get user full name
-    full_name = update.message.from_user.full_name
+        #get user id
+        username = "User ID: "+update.message.from_user.id
+    else:
+        #get user username
+        username = update.message.from_user.username
+    #check if full name is none
+    if update.message.from_user.full_name is None:
+        #get user id
+        full_name = "User ID: "+update.message.from_user.id
+    else:
+        full_name = update.message.from_user.full_name
+    
     #embed and store the message in db/messages.csv
     message_vector = get_embedding(message, 'text-embedding-ada-002')
 

@@ -194,6 +194,8 @@ async def handle_voice(update, context):
         
         return
     except Exception as e:
+        # assign the traceback to a variable // asignar el traceback a una variable
+        traceback = sys.exc_info()[2]
         traceback = traceback[:79]
         # print and send the formatted traceback // imprimir y enviar el traceback formateado
         traceback.print_exc()
@@ -237,6 +239,9 @@ async def handle_audio(update, context):
         response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username,update=update,personality=personality)
         # call the clean_options function // llamar a la función clean_options
         response_text, options = await clean.clean_options(response)
+        # add the options to the current response options
+        for option in options:
+            current_response_options.append(option)
         # reply to the message with the summary and the 5 options // responder al mensaje con el resumen y las 5 opciones
         await update.message.reply_text(response_text, reply_markup=InlineKeyboardMarkup(
             [
@@ -321,7 +326,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("Data: "+data)
     # if the data is a number, then it's an instruction // si los datos son un número, entonces es una instrucción
     if data.isdigit():
-        response = await ai.complete_prompt("answer", clean.options[int(data)], update.callback_query.from_user.username, update, personality)
+        print("current_response_options: "+str(current_response_options))
+        response = await ai.complete_prompt("answer", current_response_options[int(data)], update.callback_query.from_user.username, update, personality)
         # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
         await update.callback_query.message.reply_text(response)
         await update.callback_query.message.reply_text("🥲 Si no te gustó la respuesta, podés mandarme una nota de voz con instrucciones 🗣️ o apretar otro botón.")
@@ -407,6 +413,8 @@ async def crud(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # main function // función principal
 if __name__ == '__main__':
+
+    current_response_options = []
 
     my_username = config.my_username
 

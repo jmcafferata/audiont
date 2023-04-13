@@ -25,6 +25,7 @@ import csv
 from nanoid import generate
 import asyncio
 from telegram.error import BadRequest
+from telegram.error import RetryAfter
 
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
@@ -227,6 +228,7 @@ async def transcribe_audio(update):
         wav_audio = open(new_audio_path, "rb")
         # call the OpenAI API to get the text from the audio file // llamar a la API de OpenAI para obtener el texto del archivo de audio
         try:
+            print("⬆️⬆️⬆️⬆️ Starting transcription ⬆️⬆️⬆️⬆️")
             transcription_object = openai.Audio.transcribe(
             "whisper-1", wav_audio, language="es", prompt="esto es una nota de voz. hay momentos de silencio en el audio, cuidado con eso.")
             print("Transcription:\n"+transcription_object["text"])
@@ -310,7 +312,7 @@ async def chat(update,message,model,personality):
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ')+'\n')
     # store the response on chat.csv but replace new lines with \n
     with open('chat.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|system|' + gpt_response.choices[0].message.content.replace('\n', ' ') + '\n')
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + gpt_response.choices[0].message.content.replace('\n', ' ') + '\n')
     
     return gpt_response.choices[0].message.content
 
@@ -380,15 +382,22 @@ async def secretary(update,message,personality,context):
 
 async def crud(update,message,context):
 
+    final_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="🤖🤖🤖🤖")
+
     now = datetime.now()
     
+    with open('chat.csv', 'a', encoding='utf-8') as f:
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|user|" + message.replace("\n", " ") + "\n")
+
     # get 'step-one' value from instructions.csv
     step_one_instructions = read_data_from_csv('crud', 'instructions.csv')
     prompt = []
     # get a list of all the csv files in the folder
     csv_files = [f for f in os.listdir('./db/') if os.path.isfile(os.path.join('./db/', f)) and f.endswith('.csv')]
     print("############## ENTERING STEP ONE #################")
+    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="Entrando al paso 1...")
     print("csv_files: " + str(csv_files))
+    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="csv_files: " + str(csv_files))
     headers_and_first_rows = ''
     #for each csv
     for csv_file in csv_files:
@@ -426,6 +435,7 @@ async def crud(update,message,context):
 
     response_string = step_one_response.choices[0].message.content
     print('step one response_string \n', response_string)
+    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="Paso 1: \n"+response_string)
     # if response contains '[', get everything between the first '[' and the last ']'
     print("############## ENTERING STEP TWO ###############")
     
@@ -440,8 +450,8 @@ async def crud(update,message,context):
         for database in databases_to_crud:
             # get the database name
             database_name = os.path.join('./db/', ensure_csv_extension(database["database"]))
-            database_command = database['command']
-            database_info += 'Database name: '+database["database"] + '. Command: ' + database_command + '\n'
+            database_prompt = database['prompt']
+            database_info += 'Database name: '+database["database"] + '. Prompt: ' + database_prompt + '\n'
             # open the database csv file
             with open(database_name, 'r', encoding='utf-8') as f:
                 # read the entire file into lines
@@ -453,11 +463,12 @@ async def crud(update,message,context):
             
              # get the database similar rows
             print("database_name: ",database_name)
-            similar_entries = get_top_entries(database_name, database_command, 7)
+            similar_entries = get_top_entries(database_name, database_prompt, 7)
             #truncate the string to 2300 characters
-            similar_entries = similar_entries[:1000]
+            similar_entries = similar_entries[:1500]
             database_info += similar_entries + '\n'
         print("database_info: \n",database_info)
+        info_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="Info que me va a ayudar: \n"+database_info)
 
         step_two_instructions = read_data_from_csv('step-two', 'instructions.csv')
         prompt = []
@@ -472,6 +483,7 @@ async def crud(update,message,context):
 
         step_two_response_string = step_two_response.choices[0].message.content
         print('step two response_string \n', step_two_response_string)
+        await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="Paso 2: \n"+step_two_response_string)
         print("############## ENTERING STEP THREE ###############")
         # if response contains '[', get everything between the first '[' and the last ']'
         if '[' in step_two_response_string:
@@ -512,16 +524,24 @@ async def crud(update,message,context):
                     # Write the updated DataFrame back to the CSV file
                     with open(csv_path, 'w', encoding='utf-8') as f:
                         df.to_csv(f, sep='|', index=False, escapechar='\\', encoding='utf-8')
+
                     
                     return "Added:\n" + row_data_string + "\n to database " + command["database"]
                 elif command["operation"] == "read":
                     print("reading: " + str(command))
-                    similarity_results = get_top_entries(os.path.join('./db/', ensure_csv_extension(command['database'])), message, 7)
+                    similarity_results = get_top_entries(os.path.join('./db/', ensure_csv_extension(command['database'])), command['prompt'], 7)
+                    #send the response but make the string max 4000 characters
+                    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="Paso 3: \n" + similarity_results[:3000])
                     step_three_instructions = read_data_from_csv('step-three', 'instructions.csv')
                     prompt = []
                     prompt.append({"role": "system", "content": step_three_instructions})
                     prompt.append({"role": "user", "content": message})
                     prompt.append({"role": "user", "content": "Use this data to write the response with UTF-8 encoding:\n" + similarity_results})
+                    #writ the similarity results to the chat.csv file
+                    with open('chat.csv', 'a', encoding='utf-8') as f:
+                        now = datetime.now()
+                        f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|user|Acá te paso data mía:" + similarity_results.replace("\n", " ").replace("|", " ") + " - ")
+
                     step_three_response = openai.ChatCompletion.create(
                         model="gpt-4",
                         messages=prompt,
@@ -550,10 +570,46 @@ async def crud(update,message,context):
                                 try:
                                     await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=new_message.message_id, text=legible_text)
                                     current_text = legible_text
+                      
                                     # await asyncio.sleep(0.1)  # Add a small delay before editing the message again
                                 except BadRequest as e:
                                     if 'Message is not modified' not in str(e):
                                         raise e
+                                except RetryAfter as e:
+                                    counter = 0
+                                    counter_max = e.retry_after
+                                    error_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="Me estoy quedando sin memoria, por favor, espera un momento... ( " + str(e.retry_after) + " segundos)")
+                                    #edit the error message like a timer
+                                    while counter < counter_max:
+                                        edited_error_message = "Me estoy quedando sin memoria, por favor, espera un momento... ( " + str(counter_max - counter) + " segundos)"
+                                        await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=error_message.message_id, text=edited_error_message)
+                                        await asyncio.sleep(1)
+                                        counter += 1
+                                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=error_message.message_id)
+
+                                    current_text = legible_text
+                                    if current_text != '':
+                                        # delete the final_message
+                                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=final_message.message_id)
+                                            
+                                        with open('chat.csv', 'a', encoding='utf-8') as f:
+                                            now = datetime.now()
+                                            f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|assistant|" + current_text.replace("\n", " ") + "\n")
+                                    await asyncio.sleep(e.retry_after)
+                                    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=new_message.message_id, text=legible_text)
+
+                                    # await asyncio.sleep(0.1)  # Add a small delay before editing the message again
+                    # write the user message and the legible text to chat.csv (date|role|content)
+                    if current_text != '':
+                        # delete the final_message
+                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=final_message.message_id)
+                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=info_message.message_id)
+                        print("current_text: ", current_text)
+                        print("writing to chat.csv")
+                        with open('chat.csv', 'a', encoding='utf-8') as f:
+                            now = datetime.now()
+                            f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|assistant|" + current_text.replace("\n", " ") + "\n")
+            
                     
 
                 elif command["operation"] == "update":
@@ -584,139 +640,6 @@ async def crud(update,message,context):
     return str(similar_entries)
 
 
-
-
-
-################### v2 ############################   
-async def interpret(message,mode,instructions, personality):
-
-    now = datetime.now(timezone)
-
-    gpt_response_objects = []
-
-    # modo chat
-    if mode == "chat3" or mode == "chat4":
-
-        print("################# ENTERING CHAT MODE #################")
-
-        # get 10 most recent messages from chat.csv
-        chat_df = pd.read_csv('chat.csv', sep='|', encoding='utf-8', escapechar='\\')
-        chat_df = chat_df.tail(10)
-        # for each message, get the role and content
-        prompt = []
-        prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")})
-        for index, row in chat_df.iterrows():
-            prompt.append({"role": row['role'], "content": row['content']})
-        prompt.append({"role": "user", "content": message})
-        if instructions == "chat3":
-            model = "gpt-3.5-turbo"
-        else:
-            model = "gpt-4"
-        gpt_response = openai.ChatCompletion.create(
-            model=model,
-            messages=prompt,
-        )
-        print("################ CHAT response ############", gpt_response.choices[0].message.content)
-        #store the message on chat.csv. make sure you replace the new lines with spaces
-        with open('chat.csv', 'a', encoding='utf-8') as f:
-            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ')+'\n')
-        # store the response on chat.csv but replace new lines with \n
-        with open('chat.csv', 'a', encoding='utf-8') as f:
-            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|system|' + gpt_response.choices[0].message.content.replace('\n', ' ') + '\n')
-        # create a list of strings with the response
-        gpt_response_strings = []
-        gpt_response_strings.append(gpt_response.choices[0].message.content)
-        return gpt_response_strings
-
-    # modo asistente 
-    else:
-        print("################# ENTERING ASSISTANT MODE #################")
-
-        prompt = [{"role": "system", "content": instructions + "\n Today is " + now.strftime("%d/%m/%Y %H:%M:%S")},
-                {"role": "user", "content": message}]
-
-        # esto devuelve un JSON o un list de JSONs
-        gpt_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=prompt,
-            temperature=0.2,
-        )
-
-        print("################ GPT-3.5 response ############", gpt_response.choices[0].message.content)
-
-        # check if the response string contains a JSON, a list of JSONs or something else
-        if gpt_response.choices[0].message.content.startswith('{'):
-            # if it's a single JSON, convert it to a list of JSONs
-            gpt_response_objects.append(json.loads(gpt_response.choices[0].message.content))
-        elif gpt_response.choices[0].message.content.startswith('['):
-            # if it's a list of JSONs, convert it to a list of JSONs
-            gpt_response_objects = json.loads(gpt_response.choices[0].message.content)
-        else:
-            # if it's something else, just return the response string
-            gpt_response_strings = []
-            gpt_response_strings.append(gpt_response.choices[0].message.content)
-            return gpt_response_strings
-        # now the gpt_response_objects is a list of dicts
-        for object in gpt_response_objects:
-
-            service = object["service"]
-
-            if service == "QUERY":
-                print("################ QUERY ############")
-                similar_entries = ''
-                query = message
-                for db in object["databases"]:
-                    if not db.endswith(".csv"):
-                        db += ".csv"
-                    similar_entries += get_top_entries(db, query)
-                print("################ PROMPTING GPT-4 ############")
-                gpt4_response = openai.ChatCompletion.create(
-                    model="gpt-4",
-                    messages=[{"role": "system", "content": personality}, {"role": "user", "content": f"""According to the following data from my personal csv databases:
-
-                {similar_entries}
-
-                {query}"""}]
-                )
-                gpt4_response_text = gpt4_response.choices[0].message.content
-
-                print("################ GPT-4 response ############", gpt4_response_text)
-                return gpt4_response_text
-
-            else:
-                print("################ STORING ############")
-                fields = [key for key in object.keys() if key != 'service']
-                fields.append('embedding')
-                file_name = object['service'].lower() + ".csv"
-                formatted_text = ' | '.join([str(value) for value in object.values()])
-                object_embedding = get_embedding(formatted_text, 'text-embedding-ada-002')
-                object['embedding'] = object_embedding
-                #remove the service key from the object
-                del object['service']
-
-                with open(file_name, 'a', newline='', encoding='utf-8') as csvfile:
-                    writer = csv.DictWriter(csvfile, fieldnames=fields,delimiter='|')
-
-                    # Check if the file is empty to write the header only once
-                    if csvfile.tell() == 0:
-                        writer.writeheader()
-
-                    # Write the object (now containing the embedding) to the CSV file
-                    writer.writerow(object)
-
-
-                gpt_string = ""
-
-                for key in object:
-                    if key != 'service' and key != 'embedding':
-                        gpt_string += str(object[key]) + "\n"
-
-                # let the user know that the message was stored
-                gpt_string += "\n Agregado a " + service + ".csv"
-
-            return gpt_string
-
-
 ################### v1 ############################
 
 async def complete_prompt(reason, message,username,update,personality):
@@ -744,6 +667,12 @@ async def complete_prompt(reason, message,username,update,personality):
 
         
     elif (reason == "answer"):
+        # get related notes from db/notes.csv using pandas cosine similiaryty and get_top_entries
+        notes_file = 'db/notes.csv'
+        # get the top 3 entries
+        similar_entries = get_top_entries(notes_file,csvm.get_last_audio(), 7)
+
+
         model = "gpt-4"
         chat_messages.append({"role":"user","content":"""
         Me acaban de enviar un mensaje de voz. Dice lo siguiente:
@@ -754,7 +683,10 @@ async def complete_prompt(reason, message,username,update,personality):
         
         """ + message + """
         
-        Escribir el mensaje de parte mía hacia el remitente, usando mis instrucciones como guía (pero no es necesario poner literalmente lo que dice la instrucción), mi personalidad y usando el mismo tono conversacional que mi interlocutor. Usar los mensajes de Whatsapp como template para escribir igual a mí (pero sin la hora y sin poner mi nombre al principio). Que sea muy natural, que parezca el cuerpo de un mensaje de chat."""})
+        Escribir el mensaje de parte mía hacia el remitente, usando mis instrucciones como guía (pero no es necesario poner literalmente lo que dice la instrucción), mi personalidad y usando el mismo tono conversacional que mi interlocutor. Usar las siguientes notas mías para escribir igual a mí.
+         
+          """ + similar_entries + """
+        Que sea muy natural, que parezca el cuerpo de un mensaje de chat."""})
 
         
     
@@ -780,7 +712,7 @@ async def complete_prompt(reason, message,username,update,personality):
 
     print("############### FIN DE CONFIGURACIÓN DEL PROMPT ################")
     print("############### PROMPTING THE AI ################")
-
+    print('chat_messages: ', chat_messages)
 
     gpt_response = openai.ChatCompletion.create(
     model=model,

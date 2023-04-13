@@ -8,7 +8,8 @@ Para configurar este código, es necesario crear un archivo de configuración ll
 - **telegram_api_key**: la clave de API del bot de telegram
 - **openai_api_key**: la clave de API de OpenAI
 - **my_name**: tu nombre
-- **about_me_spanish**: una descripción breve de ti en español
+**my_username**: tu username de Telegram
+- **personalidad**: la personalidad de tu bot
 
 Para generar la clave de API de OpenAI
 
@@ -20,4 +21,4 @@ Para generar la clave de API de OpenAI
 
 ## Cuidado
 
-Estamos en etapa experimental. En este momento, los audios QUEDAN GUARDADOS EN EL SERVIDOR DONDE CORRE EL BOT.
+Estamos en etapa experimental. En este momento, los datos QUEDAN GUARDADOS EN EL SERVIDOR DONDE CORRE EL BOT.

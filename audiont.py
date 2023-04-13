@@ -136,7 +136,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 response = await ai.chat(update,update.message.text,"4",personality)
             elif key == "crud":
 
-                response = await ai.crud(update, update.message.text)
+                response = await ai.crud(update, update.message.text,context)
         
         print('################# SENDING MESSAGE #################')
         await update.message.reply_text(response)
@@ -175,21 +175,25 @@ async def handle_voice(update, context):
             if key == "chat3":
                 # call the chat function // llamar a la función chat
                 response = await ai.chat(update,transcription,"3",personality)
+                await update.message.reply_text(response)
             elif key == "chat4":
                 # call the chat function // llamar a la función chat
                 response = await ai.chat(update,transcription,"4",personality)
+                await update.message.reply_text(response)
             elif key == "crud":
 
-                response = await ai.crud(update, transcription)
+                await ai.crud(update, transcription,context)
         
         print('################# SENDING MESSAGE #################')
-        await update.message.reply_text(response)
+        
         # if the response is an array, send each element of the array as a message // si la respuesta es un array, enviar cada elemento del array como un mensaje
         
         return
     except Exception as e:
         # print and send the formatted traceback // imprimir y enviar el traceback formateado
         traceback.print_exc()
+        #truncate the traceback to the first 79 characters
+        traceback = traceback[:79]
         await update.message.reply_text(traceback.format_exc())
         
     return ConversationHandler.END

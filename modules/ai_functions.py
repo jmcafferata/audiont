@@ -532,9 +532,9 @@ async def crud(update,message,context):
                     similarity_results = get_top_entries(os.path.join('./db/', ensure_csv_extension(command['database'])), command['prompt'], 7)
                     #send the response but make the string max 4000 characters
                     await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="Paso 3: \n" + similarity_results[:3000])
-                    step_three_instructions = read_data_from_csv('step-three', 'instructions.csv')
+                    now = datetime.now()
                     prompt = []
-                    prompt.append({"role": "system", "content": step_three_instructions})
+                    prompt.append({"role": "system", "content": config.personalidad + "\nHoy es " + now.strftime("%d/%m/%Y %H:%M:%S") + ".\n"})
                     prompt.append({"role": "user", "content": message})
                     prompt.append({"role": "user", "content": "Use this data to write the response with UTF-8 encoding:\n" + similarity_results})
                     #writ the similarity results to the chat.csv file
@@ -594,7 +594,7 @@ async def crud(update,message,context):
                                             
                                         with open('chat.csv', 'a', encoding='utf-8') as f:
                                             now = datetime.now()
-                                            f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|assistant|" + current_text.replace("\n", " ") + "\n")
+                                            f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|assistant|" + current_text.replace("\n", " ").replace("|", " ") + "\n")
                                     await asyncio.sleep(e.retry_after)
                                     await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=new_message.message_id, text=legible_text)
 
@@ -608,7 +608,7 @@ async def crud(update,message,context):
                         print("writing to chat.csv")
                         with open('chat.csv', 'a', encoding='utf-8') as f:
                             now = datetime.now()
-                            f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|assistant|" + current_text.replace("\n", " ") + "\n")
+                            f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|assistant|" + current_text.replace("\n", " ").replace("|", " ") + "\n")
             
                     
 

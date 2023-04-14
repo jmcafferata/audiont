@@ -291,10 +291,13 @@ async def chat(update,message,model,personality):
 
     # get 10 most recent messages from chat.csv
     chat_df = pd.read_csv('chat.csv', sep='|', encoding='utf-8', escapechar='\\')
-    chat_df = chat_df.tail(10)
+    chat_df = chat_df.tail(7)
+    #get similar entries in notes.csv
+    similar_entries = get_top_entries('db/notes.csv', message, top_n=3)
     # for each message, get the role and content
     prompt = []
-    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+personality})
+    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+personality+"\nNotas que te pueden ayudar a ayudarme:\n"+similar_entries})
+    print("################ similar entries ############", similar_entries)
     for index, row in chat_df.iterrows():
         prompt.append({"role": row['role'], "content": row['content']})
     prompt.append({"role": "user", "content": message})

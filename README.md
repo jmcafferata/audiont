@@ -1,3 +1,4 @@
+![un asistente virtual estilo consola de videojuegos](https://github.com/jmcafferata/audiont/blob/main/audiont.jpg?raw=true)
 # Audion't
 Un bot de Telegram que transcribe audios y genera un resumen y una respuesta.
 

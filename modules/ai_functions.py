@@ -309,10 +309,10 @@ async def chat(update,message,model,personality):
     print("################ CHAT response ############", gpt_response.choices[0].message.content)
     #store the message on chat.csv. make sure you replace the new lines with spaces
     with open('chat.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ')+'\n')
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ').replace('|','-')+'\n')
     # store the response on chat.csv but replace new lines with \n
     with open('chat.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + gpt_response.choices[0].message.content.replace('\n', ' ') + '\n')
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + gpt_response.choices[0].message.content.replace('\n', ' ').replace('|','-')+ '\n')
     
     return gpt_response.choices[0].message.content
 

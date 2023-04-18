@@ -53,7 +53,23 @@ def read_data_from_csv(key: str, filename: str) -> dict:
 
 
 def check_and_compute_cosine_similarity(x, message_vector):
-    x = np.array(literal_eval(x), dtype=np.float64)  # Convert x to float64
+    try:
+        x = np.array(literal_eval(x), dtype=np.float64)  # Convert x to float64
+    except ValueError:
+        print("ValueError: could not convert string to float: '{}'".format(x))
+        return 0.0
+    except SyntaxError:
+        print("SyntaxError: invalid syntax")
+        return 0.0
+    except TypeError:
+        print("TypeError: can't convert {} to float".format(type(x)))
+        return 0.0
+    except Exception as e:
+        print("Exception: {}".format(e))
+        return 0.0
+
+
+   
     return cosine_similarity(x, message_vector)
 
 ################## GOOGLE SEARCH ############################
@@ -385,8 +401,6 @@ async def secretary(update,message,personality,context):
 
 async def crud(update,message,context):
 
-    final_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="🤖🤖🤖🤖")
-
     now = datetime.now()
     
     with open('chat.csv', 'a', encoding='utf-8') as f:
@@ -398,9 +412,7 @@ async def crud(update,message,context):
     # get a list of all the csv files in the folder
     csv_files = [f for f in os.listdir('./db/') if os.path.isfile(os.path.join('./db/', f)) and f.endswith('.csv')]
     print("############## ENTERING STEP ONE #################")
-    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="Entrando al paso 1...")
     print("csv_files: " + str(csv_files))
-    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="csv_files: " + str(csv_files))
     headers_and_first_rows = ''
     #for each csv
     for csv_file in csv_files:
@@ -428,220 +440,90 @@ async def crud(update,message,context):
    
     prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S") + ".\n" + step_one_instructions})
     prompt.append({"role": "user", "content": message})
-    prompt.append({"role": "user", "content": "These are the only available database files to perform CRUD (with headers and first row): " +headers_and_first_rows})
+    prompt.append({"role": "user", "content": "These are the only available database files (with headers and first row): " +headers_and_first_rows})
     # esto devuelve un JSON o un list de JSONs
     step_one_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=prompt,
-        temperature=0.2,
+        temperature=0.5,
     )
 
     response_string = step_one_response.choices[0].message.content
     print('step one response_string \n', response_string)
-    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="Paso 1: \n"+response_string)
     # if response contains '[', get everything between the first '[' and the last ']'
-    print("############## ENTERING STEP TWO ###############")
     
+    # if response starts with {, wrap it in a list
+    if response_string.startswith('{'):
+        response_string = '[' + response_string + ']'
     if '[' in response_string:
-        databases_to_crud_string = response_string[response_string.find('['):response_string.rfind(']')+1]
-        databases_to_crud = json.loads(databases_to_crud_string)
-        print("databases_to_crud: " + str(databases_to_crud))
-
-        database_info = ''
-
-        # for each database in the list
-        for database in databases_to_crud:
-            # get the database name
-            database_name = os.path.join('./db/', ensure_csv_extension(database["database"]))
-            database_prompt = database['prompt']
-            database_info += 'Database name: '+database["database"] + '. Prompt: ' + database_prompt + '\n'
-            # open the database csv file
-            with open(database_name, 'r', encoding='utf-8') as f:
-                # read the entire file into lines
-                lines = f.readlines()
+        print("############## ENTERING STEP TWO ###############")
+        database_commands_string = response_string[response_string.find('['):response_string.rfind(']')+1]
+        database_commands = json.loads(database_commands_string)
+        for command in database_commands:
+            if command["operation"] == "create":
+                print("creating: " + str(command))
+                csv_path = os.path.join('./db/', ensure_csv_extension(command['database']))
                 
-            # get the header
-            header = lines[0].strip()
-            database_info += 'Header: ' + header + '\n'
-            
-             # get the database similar rows
-            print("database_name: ",database_name)
-            similar_entries = get_top_entries(database_name, database_prompt, 7)
-            #truncate the string to 2300 characters
-            similar_entries = similar_entries[:1500]
-            database_info += similar_entries + '\n'
-        print("database_info: \n",database_info)
-        info_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="Info que me va a ayudar: \n"+database_info)
+                # Read the CSV file into a DataFrame
+                with open(csv_path, 'r', encoding='utf-8') as f:
+                    csv_str = f.read()
+                df = pd.read_csv(StringIO(csv_str), sep='|', encoding='utf-8', escapechar='\\')
+                
+                
 
-        step_two_instructions = read_data_from_csv('step-two', 'instructions.csv')
-        prompt = []
-        prompt.append({"role": "system", "content":"Today is " + now.strftime("%d/%m/%Y %H:%M:%S") + ".\n" + step_two_instructions})
-        prompt.append({"role": "user", "content": message})
-        prompt.append({"role": "user", "content": "Use this database to write the response:\n" + database_info})
-        step_two_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=prompt,
-            temperature=0.8,
-        )
+                # Check if all command fields are in the DataFrame columns
+                missing_columns = set(command['row'].keys()) - set(df.columns)
+                
+                # Add missing columns and fill the old rows with empty strings
+                for col in missing_columns:
+                    df[col] = ''
+                
+                # Move the 'embedding' column to the end
+                cols = [col for col in df.columns if col != 'embedding'] + ['embedding']
+                df = df[cols]
+                
+                # Append the new row
+                row_data = command['row']
+                row_data['row_id'] = generate('0123456789', 5)
+                row_data_string = str(row_data)
+                row_data["embedding"] = get_embedding(row_data_string, "text-embedding-ada-002")
+                
+                row_to_add = pd.DataFrame([row_data], columns=df.columns)
+                df = pd.concat([df, row_to_add], ignore_index=True)  # Use pandas.concat instead of frame.append
+                
+                # Write the updated DataFrame back to the CSV file
+                with open(csv_path, 'w', encoding='utf-8') as f:
+                    df.to_csv(f, sep='|', index=False, escapechar='\\', encoding='utf-8')
 
-        step_two_response_string = step_two_response.choices[0].message.content
-        print('step two response_string \n', step_two_response_string)
-        await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="Paso 2: \n"+step_two_response_string)
-        print("############## ENTERING STEP THREE ###############")
-        # if response contains '[', get everything between the first '[' and the last ']'
-        if '[' in step_two_response_string:
-            database_commands_string = step_two_response_string[step_two_response_string.find('['):step_two_response_string.rfind(']')+1]
-            database_commands = json.loads(database_commands_string)
-            for command in database_commands:
-                if command["operation"] == "create":
-                    print("creating: " + str(command))
-                    csv_path = os.path.join('./db/', ensure_csv_extension(command['database']))
-                    
-                    # Read the CSV file into a DataFrame
-                    with open(csv_path, 'r', encoding='utf-8') as f:
-                        csv_str = f.read()
-                    df = pd.read_csv(StringIO(csv_str), sep='|', encoding='utf-8', escapechar='\\')
-                    
-                    
-
-                    # Check if all command fields are in the DataFrame columns
-                    missing_columns = set(command['row'].keys()) - set(df.columns)
-                    
-                    # Add missing columns and fill the old rows with empty strings
-                    for col in missing_columns:
-                        df[col] = ''
-                    
-                    # Move the 'embedding' column to the end
-                    cols = [col for col in df.columns if col != 'embedding'] + ['embedding']
-                    df = df[cols]
-                    
-                    # Append the new row
-                    row_data = command['row']
-                    row_data['row_id'] = generate('0123456789', 5)
-                    row_data_string = str(row_data)
-                    row_data["embedding"] = get_embedding(row_data_string, "text-embedding-ada-002")
-                    
-                    row_to_add = pd.DataFrame([row_data], columns=df.columns)
-                    df = pd.concat([df, row_to_add], ignore_index=True)  # Use pandas.concat instead of frame.append
-                    
-                    # Write the updated DataFrame back to the CSV file
-                    with open(csv_path, 'w', encoding='utf-8') as f:
-                        df.to_csv(f, sep='|', index=False, escapechar='\\', encoding='utf-8')
-
-                    
-                    return "Added:\n" + row_data_string + "\n to database " + command["database"]
-                elif command["operation"] == "read":
-                    print("reading: " + str(command))
-                    similarity_results = get_top_entries(os.path.join('./db/', ensure_csv_extension(command['database'])), command['prompt'], 7)
-                    #send the response but make the string max 4000 characters
-                    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=final_message.message_id, text="Paso 3: \n" + similarity_results[:3000])
-                    step_three_instructions = read_data_from_csv('step-three', 'instructions.csv')
-                    prompt = []
-                    prompt.append({"role": "system", "content": step_three_instructions})
-                    prompt.append({"role": "user", "content": message})
-                    prompt.append({"role": "user", "content": "Use this data to write the response with UTF-8 encoding:\n" + similarity_results})
-                    #writ the similarity results to the chat.csv file
-                    with open('chat.csv', 'a', encoding='utf-8') as f:
-                        now = datetime.now()
-                        f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|user|Acá te paso data mía:" + similarity_results.replace("\n", " ").replace("|", " ") + " - ")
-
-                    step_three_response = openai.ChatCompletion.create(
-                        model="gpt-4",
-                        messages=prompt,
-                        temperature=0.8,
-                        stream=True
-                    )
-                    # create variables to collect the stream of chunks
-
-
-                    collected_chunks = []
-                    collected_messages = []
-                    # iterate through the stream of events
-                    new_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="Respuesta:\n")
-                    current_text = ''
-                    for chunk in step_three_response:
-                        collected_chunks.append(chunk)  # save the event response
-                        chunk_dict = chunk['choices'][0]['delta']  # extract the message
-                        chunk_message = chunk_dict.get('content')  # extract the message text
-
-                        if chunk_message is not None:
-                            collected_messages.append(chunk_message)  # save the message
-                            print("chunk_message: ", chunk_message)
-                            legible_text = ''.join(collected_messages)
-                            if legible_text != current_text:
-                                # Edit the message with the concatenated response text
-                                try:
-                                    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=new_message.message_id, text=legible_text)
-                                    current_text = legible_text
-                      
-                                    # await asyncio.sleep(0.1)  # Add a small delay before editing the message again
-                                except BadRequest as e:
-                                    if 'Message is not modified' not in str(e):
-                                        raise e
-                                except RetryAfter as e:
-                                    counter = 0
-                                    counter_max = e.retry_after
-                                    error_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="Me estoy quedando sin memoria, por favor, espera un momento... ( " + str(e.retry_after) + " segundos)")
-                                    #edit the error message like a timer
-                                    while counter < counter_max:
-                                        edited_error_message = "Me estoy quedando sin memoria, por favor, espera un momento... ( " + str(counter_max - counter) + " segundos)"
-                                        await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=error_message.message_id, text=edited_error_message)
-                                        await asyncio.sleep(1)
-                                        counter += 1
-                                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=error_message.message_id)
-
-                                    current_text = legible_text
-                                    if current_text != '':
-                                        # delete the final_message
-                                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=final_message.message_id)
-                                            
-                                        with open('chat.csv', 'a', encoding='utf-8') as f:
-                                            now = datetime.now()
-                                            f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|assistant|" + current_text.replace("\n", " ") + "\n")
-                                    await asyncio.sleep(e.retry_after)
-                                    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=new_message.message_id, text=legible_text)
-
-                                    # await asyncio.sleep(0.1)  # Add a small delay before editing the message again
-                    # write the user message and the legible text to chat.csv (date|role|content)
-                    if current_text != '':
-                        # delete the final_message
-                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=final_message.message_id)
-                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=info_message.message_id)
-                        print("current_text: ", current_text)
-                        print("writing to chat.csv")
-                        with open('chat.csv', 'a', encoding='utf-8') as f:
-                            now = datetime.now()
-                            f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|assistant|" + current_text.replace("\n", " ") + "\n")
-            
-                    
-
-                elif command["operation"] == "update":
-                    # todo: update an entry
-                    print("updating: " + str(command))
-                    return str(database_commands)
-                elif command["operation"] == "delete":
-                    # todo: delete an entry
-                    print("deleting: " + str(command))
-                    return str(database_commands) 
-        else:
-            return step_two_response.choices[0].message.content
+                
+                return "Added:\n" + row_data_string + "\n to database " + command["database"]
+            elif command["operation"] == "search":
+                print("reading: " + str(command))
+                print("############## Getting top entries ###############")
+                similarity_results = get_top_entries(os.path.join('./db/', ensure_csv_extension(command['database'])), command['prompt'], 15)
+                #send the response but make the string max 4000 characters
+                if len(similarity_results) > 4000:
+                    similarity_results = similarity_results[:4000]
+                prompt = []
+                prompt.append({"role": "system", "content": "Hoy es " + now.strftime("%d/%m/%Y %H:%M:%S") + ".\n" + config.personalidad})
+                prompt.append({"role": "user", "content": command['prompt']})
+                prompt.append({"role": "user", "content": "Use this data to write the response with UTF-8 encoding:\n" + similarity_results})
+                print("############## Prompting the AI ###############")
+                step_three_response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=prompt,
+                    temperature=0.8
+                )
+                step_three_response_string = step_three_response.choices[0].message.content
+                                        
+                with open('chat.csv', 'a', encoding='utf-8') as f:
+                    now = datetime.now()
+                    f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|assistant|" + step_three_response_string.replace("\n", " ").replace("|", " ") + "\n")
+                return step_three_response_string
     else:
         return step_one_response.choices[0].message.content
     
    
-
-
-
-
-
-    step_two_instructions = read_data_from_csv('step-two', 'instructions.csv')
-    prompt = []
-    prompt.append({"role": "system", "content": step_two_instructions})
-    prompt.append({"role": "user", "content": update.message.text})
-
-
-    return str(similar_entries)
-
 
 ################### v1 ############################
 

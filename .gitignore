@@ -6,3 +6,5 @@ config.py
 *.ogg
 *.opus
 *.oga
+db/tweets.csv
+__pycache__/

@@ -119,6 +119,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = None # Initialize the 'response' variable here
         
         instructions, personality, key = get_instructions()
+        personality = config.personalidad
     
         # get sender username
         username = update.message.from_user.username
@@ -164,6 +165,7 @@ async def handle_voice(update, context):
         response = None # Initialize the 'response' variable here
         
         instructions, personality, key = get_instructions()
+        personality = config.personalidad
     
         # get sender username
         username = update.message.from_user.username
@@ -217,6 +219,7 @@ async def handle_audio(update, context):
 
     instructions, personality, key = get_instructions()
     # call the transcribe_audio function // llamar a la función transcribe_audio
+    personality = config.personalidad
         
     try:
         transcription = await ai.transcribe_audio(update)

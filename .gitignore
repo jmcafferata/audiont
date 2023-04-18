@@ -8,3 +8,4 @@ config.py
 *.oga
 db/tweets.csv
 __pycache__/
+db/

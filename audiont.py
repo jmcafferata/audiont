@@ -38,8 +38,6 @@ import modules.convert_to_wav
 import modules.csv_manipulation as csvm
 # import the ai_functions file // importar el archivo ai_functions
 import modules.ai_functions as ai
-# import the subscriptions file // importar el archivo subscriptions
-import modules.subscriptions as subs
 import pathlib as Path
 import requests
 import pytz

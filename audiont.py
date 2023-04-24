@@ -269,6 +269,7 @@ async def handle_audio(update, context):
 async def respond_audio(update, context):
     instructions, personality, key = get_instructions()
     # call the transcribe_audio function // llamar a la función transcribe_audio
+    personality = config.personalidad
     transcription = await ai.transcribe_audio(update)
     response = await ai.complete_prompt(reason="answer", message=transcription, username=update.message.from_user.username,update=update,personality=personality)
     await update.message.reply_text(response)
@@ -325,6 +326,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     instructions, personality, key = get_instructions()
     # get the data from the callback query // obtener los datos de la consulta de devolución de llamada
+    personality = config.personalidad
     data = update.callback_query.data
     print("Data: "+data)
     # if the data is a number, then it's an instruction // si los datos son un número, entonces es una instrucción

@@ -5,6 +5,11 @@ import json
 
 # store the audio message in the user's folder to be processed later // almacenar el mensaje de audio en la carpeta del usuario para ser procesado más tarde
 def store_to_csv(message):
+
+    if not os.path.exists('audios.csv'):
+        with open('audios.csv', 'w', newline='', encoding='utf-8') as file:
+            pass
+
     with open('audios.csv', 'a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow([datetime.now(), message])

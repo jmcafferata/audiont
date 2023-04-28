@@ -311,7 +311,7 @@ async def chat(update,message,model):
     # check if chat.csv exists. if not, create it
     if not os.path.isfile('chat.csv'):
         with open('chat.csv', 'w') as f:
-            f.write('fecha|role|content\n')
+            f.write('date|role|content\n')
 
     #get similar entries in notes.csv
     similar_entries = get_top_entries('db/notes.csv', message, top_n=8)
@@ -331,7 +331,7 @@ async def chat(update,message,model):
     chat_df = pd.read_csv('chat.csv', sep='|', encoding='utf-8', escapechar='\\')
     chat_df = chat_df.tail(6)
     for index, row in chat_df.iterrows():
-        prompt.append({"role": row['role'], "content": row['fecha']+" "+row['content']})
+        prompt.append({"role": row['role'], "content": row['date']+" "+row['content']})
 
     # add user message to prompt
     prompt.append({"role": "user", "content": now.strftime("%d/%m/%Y %H:%M:%S")+" "+ message})

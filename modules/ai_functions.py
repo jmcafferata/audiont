@@ -284,7 +284,8 @@ def get_top_entries(db, query, top_n=15):
     # Initialize a string with the df headers
     headers = list(entries_df.columns)
     headers.remove('similarity')
-    similar_entries = ' | '.join(headers) + '\n'
+
+    similar_entries = ''
 
     # Iterate over the rows of the DataFrame
     for index, row in entries_df.head(top_n).iterrows():
@@ -337,13 +338,15 @@ async def chat(update,message,model):
     prompt.append({"role": "user", "content": now.strftime("%d/%m/%Y %H:%M:%S")+" "+ message})
 
     # add the response beginning to the prompt
-    prompt.append({"role": "assistant", "content": '{"store_message":'})
+    prompt.append({"role": "assistant", "content": '{"store_message":"'})
 
 
     if model == "3":
         model = "gpt-3.5-turbo"
     else:
         model = "gpt-4"
+
+    print(str(prompt))
 
     gpt_response = openai.ChatCompletion.create(
         model=model,
@@ -373,11 +376,17 @@ async def chat(update,message,model):
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ').replace('|','-')+'\n')
     
     # get the text from the assistant between '"response": "' and '"}' and store it on chat.csv
-    try:
-        print("################ CHAT response ############", response_string)
-        response_string = response_string.split('"response":"')[1].split('"}')[0]
-    except Exception as e:
-        traceback.print_exc()
+    
+    pattern = r'"response":\s?"(.*?)"(?:,|\s?})'
+
+
+    match = re.search(pattern, response_string)
+
+    if match:
+        new_response_string = match.group(1)
+        response_string = new_response_string
+    else:
+        print("No se encontró la respuesta.")
 
     with open('chat.csv', 'a', encoding='utf-8') as f:
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')

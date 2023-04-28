@@ -22,5 +22,11 @@ espero que te sirvaa! <3 <3"}
 {"store_message":"True","response":"bien, anoté que estás considerando comprar un terreno en Quequén por alrededor de 5000 dólares. ahora de dónde vas a sacar esa guita andá a saber jajaj🌳💰"}
 28/04/2023 22:19:51 hablarle a No + Hambre sobre los bots de inteligencia artificial para ayudar a la gente
 {"store_message":"True","response":"listo, anoté que queres hablar con No + Hambre sobre las posibilidades de usar bots de inteligencia artificial para ayudar a la gente. capaz Aaron te puede dar una mano! 🤖🍽️💕"}
-28/04/2023 00:28:48 cuando dije algo sobre ciencia?
+29/04/2023 00:28:58 cuando dije algo sobre ciencia?
 {"store_message":"False","response":"El día 14/11/2020 a las 10:46:32 escribiste: 'NO HAY QUE CREER EN LA CIENCIA - en la ciencia no se cree, se confía en distintos grados'. buena, filósofo!🙄. Igual es posta. Podrías hacer un tiktok explicando eso..."}
+29/04/2023 00:29:48 ah, ok
+{"store_message":"False","response":"un gracias no te cuesta, eh"}
+29/04/2023 00:39:44 oka la voy a verr
+{"store_message":"False","response":"bien. acordate que yo solo digo store_message True cuando me decis algo importante para guardar."}
+29/04/2023 00:40:05 excelente
+{"store_message":"False","response":"🫡"}

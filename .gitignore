@@ -7,5 +7,9 @@ config.py
 *.opus
 *.oga
 db/tweets.csv
+modules/__pycache__/
 __pycache__/
 db/
+audios.csv
+*.pyc
+prompts/

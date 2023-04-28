@@ -26,6 +26,7 @@ from nanoid import generate
 import asyncio
 from telegram.error import BadRequest
 from telegram.error import RetryAfter
+import tiktoken
 
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
@@ -276,9 +277,7 @@ def get_top_entries(db, query, top_n=15):
         csv_str = f.read()
     entries_df = pd.read_csv(StringIO(csv_str.decode('utf-8')), sep='|', encoding='utf-8', escapechar='\\')
     query_vector = get_embedding(query, 'text-embedding-ada-002')
-
     entries_df['similarity'] = entries_df['embedding'].apply(lambda x: check_and_compute_cosine_similarity(x, query_vector))
-
     # sort by similarity
     entries_df = entries_df.sort_values(by=['similarity'], ascending=False)
 
@@ -293,49 +292,100 @@ def get_top_entries(db, query, top_n=15):
         row['embedding'] = '...'
         # delete the similarity column
         del row['similarity']
+        del row['embedding']
+        del row['row_id']
         # Convert the row to a string and join the values using '|'
-        row_str = ' | '.join(map(str, row.values))
+        row_str = ' '.join(map(str, row.values))
         # Append the row string to 'similar_entries' followed by a newline character
         similar_entries += row_str + '\n'
 
     return similar_entries
 
 
-async def chat(update,message,model,personality):
+async def chat(update,message,model):
+
     now = datetime.now()
+
     print("################# ENTERING CHAT MODE #################")
 
-    # get 10 most recent messages from chat.csv
-    chat_df = pd.read_csv('chat.csv', sep='|', encoding='utf-8', escapechar='\\')
-    chat_df = chat_df.tail(7)
+    # check if chat.csv exists. if not, create it
+    if not os.path.isfile('chat.csv'):
+        with open('chat.csv', 'w') as f:
+            f.write('fecha|role|content\n')
+
     #get similar entries in notes.csv
-    similar_entries = get_top_entries('db/notes.csv', message, top_n=3)
-    # for each message, get the role and content
+    similar_entries = get_top_entries('db/notes.csv', message, top_n=8)
+    
+    # initialize prompt
     prompt = []
-    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+personality+"\nNotas que te pueden ayudar a ayudarme:\n"+similar_entries})
+
+    # System configuration
+    # open the text from prompts/audiont.txt
+    with open('prompts/chat.txt', 'r', encoding='utf-8') as f:
+        text = f.read()
+        prompt.append({"role": "system", "content": config.personalidad+config.vocabulario+similar_entries +"\n" +text})
+
     print("################ similar entries ############", similar_entries)
+
+    # add chat history to prompt
+    chat_df = pd.read_csv('chat.csv', sep='|', encoding='utf-8', escapechar='\\')
+    chat_df = chat_df.tail(6)
     for index, row in chat_df.iterrows():
-        prompt.append({"role": row['role'], "content": row['content']})
-    prompt.append({"role": "user", "content": message})
+        prompt.append({"role": row['role'], "content": row['fecha']+" "+row['content']})
+
+    # add user message to prompt
+    prompt.append({"role": "user", "content": now.strftime("%d/%m/%Y %H:%M:%S")+" "+ message})
+
+    # add the response beginning to the prompt
+    prompt.append({"role": "assistant", "content": '{"store_message":'})
+
+
     if model == "3":
         model = "gpt-3.5-turbo"
     else:
         model = "gpt-4"
+
     gpt_response = openai.ChatCompletion.create(
         model=model,
         messages=prompt,
     )
-    print("################ CHAT response ############", gpt_response.choices[0].message.content)
-    #store the message on chat.csv. make sure you replace the new lines with spaces
+
+    # send a message saying how much the prompt will cost bsed on $0.03 / 1K tokens for prompt and $0.06 / 1K tokens for completion
+    if model == "gpt-4":
+        enc = tiktoken.encoding_for_model("gpt-4")
+        num_tokens_prompt = len(enc.encode(str(prompt)))
+        num_tokens_completion = len(enc.encode(str(gpt_response.choices[0].message.content)))
+        await update.message.reply_text('Enviando $'+str(round((num_tokens_prompt*0.03+num_tokens_completion*0.06)/1000, 2))+' a OpenAI...')
+
+    response_string = gpt_response.choices[0].message.content
+
+    # if message starts with 'True', store the user message on db/notes.csv
+    if response_string.startswith('True'):
+        with open('db/notes.csv', 'a', encoding='utf-8') as f:
+            date = now.strftime("%d/%m/%Y")
+            time = now.strftime("%H:%M:%S")
+            note_vector = get_embedding(message, 'text-embedding-ada-002')
+            row_id = str(generate('0123456789', 5))
+            f.write(date+'|'+time+'|'+message.replace('\n', ' ').replace('|','-')+'|'+row_id+'|'+str(note_vector)+'\n')
+
+    # store the user message on chat.csv but replace new lines with \n
     with open('chat.csv', 'a', encoding='utf-8') as f:
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ').replace('|','-')+'\n')
-    # store the response on chat.csv but replace new lines with \n
-    with open('chat.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + gpt_response.choices[0].message.content.replace('\n', ' ').replace('|','-')+ '\n')
     
-    return gpt_response.choices[0].message.content
+    # get the text from the assistant between '"response": "' and '"}' and store it on chat.csv
+    try:
+        print("################ CHAT response ############", response_string)
+        response_string = response_string.split('"response":"')[1].split('"}')[0]
+    except Exception as e:
+        traceback.print_exc()
 
-async def secretary(update,message,personality,context):
+    with open('chat.csv', 'a', encoding='utf-8') as f:
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')
+    
+    print("################ CHAT response ############", response_string)
+    return response_string
+
+async def secretary(update,message,context):
     now = datetime.now()
 
     #check if there is a username and a full name
@@ -365,169 +415,45 @@ async def secretary(update,message,personality,context):
     print("related_notes", related_notes)
     prompt = []
 
-    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+personality+"\nMantené tus respuestas a menos de 100 caracteres.\nAcá van algunas notas de "+config.my_name+" que pueden ayudar:\n"+related_notes+" \nMi nombre es "+full_name+" ("+username+")"})
+    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+"\nMantené tus respuestas a menos de 100 caracteres.\nAcá van algunas notas de "+config.my_name+" que pueden ayudar:\n"+related_notes+" \nMi nombre es "+full_name+" ("+username+")"})
     #print all those values to check their type
     prompt.append({"role": "user", "content": message})
     gpt_response = openai.ChatCompletion.create(
         model="gpt-4",
-        messages=prompt,
-        stream=True
+        messages=prompt
     )
-    collected_chunks = []
-    collected_messages = []
-    # iterate through the stream of events
-    new_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="✍️✍️✍️✍️")
-    current_text = ''
-    for chunk in gpt_response:
-        collected_chunks.append(chunk)  # save the event response
-        chunk_dict = chunk['choices'][0]['delta']  # extract the message
-        chunk_message = chunk_dict.get('content')  # extract the message text
+    response_string = gpt_response.choices[0].message.content
+    print("response_string", response_string)
+    # if response_string starts with "True":
+    if response_string.startswith('True'):
+        #store user message on db/notes.csv that has date|time|content|row_id|embedding format
+        with open('db/messages.csv', 'a', encoding='utf-8') as f:
+            date = now.strftime("%d/%m/%Y")
+            time = now.strftime("%H:%M:%S")
+            note_vector = get_embedding(message, 'text-embedding-ada-002')
+            row_id = str(generate('0123456789', 5))
+            f.write(date+'|'+time+'|'+message.replace('\n', ' ').replace('|','-')+'|'+row_id+'|'+str(note_vector)+'\n')
 
-        if chunk_message is not None:
-            collected_messages.append(chunk_message)  # save the message
-            print("chunk_message: ", chunk_message)
-            legible_text = ''.join(collected_messages)
-            if legible_text != current_text:
-                # Edit the message with the concatenated response text
-                try:
-                    await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=new_message.message_id, text=legible_text)
-                    current_text = legible_text
-                    # await asyncio.sleep(0.1)  # Add a small delay before editing the message again
-                except BadRequest as e:
-                    if 'Message is not modified' not in str(e):
-                        raise e
+    # get the text between '"response": "' and '"}' and store it on chat.csv
+    response_string = response_string.split('"response": "')[1].split('"}')[0]
+    #store the message on username/chat.csv. make sure you replace the new lines with spaces
+    # but first check if the folder exists and if not create it
+    if not os.path.exists('db/'+username):
+        os.makedirs('db/'+username)
+    with open('db/'+username+'/chat.csv', 'a', encoding='utf-8') as f:
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ').replace('|','-')+'\n')
+    # store the response on username/chat.csv but replace new lines with \n
+    with open('db/'+username+'/chat.csv', 'a', encoding='utf-8') as f:
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')
+
+    return response_string
     
-
-
-async def crud(update,message,context):
-
-    now = datetime.now()
-    
-    with open('chat.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|user|" + message.replace("\n", " ") + "\n")
-
-    # get 'step-one' value from instructions.csv
-    step_one_instructions = read_data_from_csv('crud', 'instructions.csv')
-    prompt = []
-    # get a list of all the csv files in the folder
-    csv_files = [f for f in os.listdir('./db/') if os.path.isfile(os.path.join('./db/', f)) and f.endswith('.csv')]
-    print("############## ENTERING STEP ONE #################")
-    print("csv_files: " + str(csv_files))
-    headers_and_first_rows = ''
-    #for each csv
-    for csv_file in csv_files:
-        #open it
-        with open(os.path.join('./db/', csv_file), 'r') as f:
-            csv_reader = csv.reader(f, delimiter='|')
-            print("csv_file: " + csv_file)
-            # get the first two lines
-            header = next(csv_reader)
-            try:
-                first_row = next(csv_reader) 
-            except StopIteration:
-                first_row = []
-            excluded_column_name = "embedding" # replace with the name of the column you want to exclude
-            excluded_column_index = header.index(excluded_column_name)
-            
-            if first_row != []:
-                first_row[excluded_column_index] = "..."
-            
-            # combine the remaining columns into a string
-            header_string = '|'.join(header)
-            first_row_string = '|'.join(first_row)
-            # add the strings to the list
-            headers_and_first_rows += csv_file+': \n'+header_string +"\n"+ first_row_string
-   
-    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S") + ".\n" + step_one_instructions})
-    prompt.append({"role": "user", "content": message})
-    prompt.append({"role": "user", "content": "These are the only available database files (with headers and first row): " +headers_and_first_rows})
-    # esto devuelve un JSON o un list de JSONs
-    step_one_response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=prompt,
-        temperature=0.5,
-    )
-
-    response_string = step_one_response.choices[0].message.content
-    print('step one response_string \n', response_string)
-    # if response contains '[', get everything between the first '[' and the last ']'
-    
-    # if response starts with {, wrap it in a list
-    if response_string.startswith('{'):
-        response_string = '[' + response_string + ']'
-    if '[' in response_string:
-        print("############## ENTERING STEP TWO ###############")
-        database_commands_string = response_string[response_string.find('['):response_string.rfind(']')+1]
-        database_commands = json.loads(database_commands_string)
-        for command in database_commands:
-            if command["operation"] == "create":
-                print("creating: " + str(command))
-                csv_path = os.path.join('./db/', ensure_csv_extension(command['database']))
-                
-                # Read the CSV file into a DataFrame
-                with open(csv_path, 'r', encoding='utf-8') as f:
-                    csv_str = f.read()
-                df = pd.read_csv(StringIO(csv_str), sep='|', encoding='utf-8', escapechar='\\')
-                
-                
-
-                # Check if all command fields are in the DataFrame columns
-                missing_columns = set(command['row'].keys()) - set(df.columns)
-                
-                # Add missing columns and fill the old rows with empty strings
-                for col in missing_columns:
-                    df[col] = ''
-                
-                # Move the 'embedding' column to the end
-                cols = [col for col in df.columns if col != 'embedding'] + ['embedding']
-                df = df[cols]
-                
-                # Append the new row
-                row_data = command['row']
-                row_data['row_id'] = generate('0123456789', 5)
-                row_data_string = str(row_data)
-                row_data["embedding"] = get_embedding(row_data_string, "text-embedding-ada-002")
-                
-                row_to_add = pd.DataFrame([row_data], columns=df.columns)
-                df = pd.concat([df, row_to_add], ignore_index=True)  # Use pandas.concat instead of frame.append
-                
-                # Write the updated DataFrame back to the CSV file
-                with open(csv_path, 'w', encoding='utf-8') as f:
-                    df.to_csv(f, sep='|', index=False, escapechar='\\', encoding='utf-8')
-
-                
-                return "Added:\n" + row_data_string + "\n to database " + command["database"]
-            elif command["operation"] == "search":
-                print("reading: " + str(command))
-                print("############## Getting top entries ###############")
-                similarity_results = get_top_entries(os.path.join('./db/', ensure_csv_extension(command['database'])), command['prompt'], 15)
-                #send the response but make the string max 4000 characters
-                if len(similarity_results) > 4000:
-                    similarity_results = similarity_results[:4000]
-                prompt = []
-                prompt.append({"role": "system", "content": "Hoy es " + now.strftime("%d/%m/%Y %H:%M:%S") + ".\n" + config.personalidad})
-                prompt.append({"role": "user", "content": command['prompt']})
-                prompt.append({"role": "user", "content": "Use this data to write the response with UTF-8 encoding:\n" + similarity_results})
-                print("############## Prompting the AI ###############")
-                step_three_response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=prompt,
-                    temperature=0.8
-                )
-                step_three_response_string = step_three_response.choices[0].message.content
-                                        
-                with open('chat.csv', 'a', encoding='utf-8') as f:
-                    now = datetime.now()
-                    f.write(now.strftime("%d/%m/%Y %H:%M:%S") + "|assistant|" + step_three_response_string.replace("\n", " ").replace("|", " ") + "\n")
-                return step_three_response_string
-    else:
-        return step_one_response.choices[0].message.content
     
    
 
 ################### v1 ############################
 
-async def complete_prompt(reason, message,username,update,personality):
+async def complete_prompt(reason, message,username,update):
 
     user_name = 'Anónimo'
     # THE JUICE // EL JUGO
@@ -535,7 +461,7 @@ async def complete_prompt(reason, message,username,update,personality):
     now = datetime.now(timezone)
 
     chat_messages = []
-    chat_messages.append({"role":"system","content":personality + "\n Today is " + now.strftime("%d/%m/%Y %H:%M:%S")})
+    chat_messages.append({"role":"system","content":config.personalidad + "\n Today is " + now.strftime("%d/%m/%Y %H:%M:%S")})
     
 
     if (reason == "summary"):
@@ -574,26 +500,7 @@ async def complete_prompt(reason, message,username,update,personality):
         Que sea muy natural, que parezca el cuerpo de un mensaje de chat."""})
 
         
-    
-
-    elif (reason == "assistance"):
-        chat_messages.append({"role":"user","content":message})
-
-
-
-    elif (reason == "google"):
-
-        
-        #internet_information tiene que ser un string
-        internet_information = await find_in_google(message)
-        
-        chat_messages.append({"role":"user","content":
-        message + 
-        "\nUsá la siguiente información para responder el mensaje:\n\n"
-        })
-        chat_messages.append({"role":"user","content":internet_information})
-
-
+ 
 
     print("############### FIN DE CONFIGURACIÓN DEL PROMPT ################")
     print("############### PROMPTING THE AI ################")

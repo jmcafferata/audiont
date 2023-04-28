@@ -12,3 +12,4 @@ __pycache__/
 db/
 audios.csv
 *.pyc
+chat.csv

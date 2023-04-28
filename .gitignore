@@ -12,4 +12,3 @@ __pycache__/
 db/
 audios.csv
 *.pyc
-prompts/

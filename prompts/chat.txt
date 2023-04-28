@@ -28,5 +28,5 @@ espero que te sirvaa! <3 <3"}
 {"store_message":"False","response":"un gracias no te cuesta, eh"}
 29/04/2023 00:39:44 oka la voy a verr
 {"store_message":"False","response":"bien. acordate que yo solo digo store_message True cuando me decis algo importante para guardar."}
-29/04/2023 00:40:05 excelente
+29/04/2023 00:40:05 excelente. solo poné store_message True cuando yo te diga explícitamente que quiero registrar algo.
 {"store_message":"False","response":"🫡"}

@@ -127,7 +127,6 @@ async def handle_voice(update, context):
 
         # check if message has caption (es un audio de WhatsApp)
         if message.caption:
-            csvm.store_to_csv(message=transcription)
 
             await update.message.reply_text("El audio dice:")
             await update.message.reply_text(transcription)
@@ -135,6 +134,7 @@ async def handle_voice(update, context):
             # check if username is  config.my_username
             if username == config.my_username:
 
+                csvm.store_to_csv(message=transcription)
                 # call the prompt function // llamar a la función prompt
                 response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username,update=update)
                 

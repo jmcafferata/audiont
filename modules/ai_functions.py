@@ -400,14 +400,14 @@ async def secretary(update,message,context):
     #check if there is a username and a full name
     if update.message.from_user.username is None:
         #get user id
-        username = "User ID: "+update.message.from_user.id
+        username = "User ID: "+str(update.message.from_user.id)
     else:
         #get user username
         username = update.message.from_user.username
     #check if full name is none
     if update.message.from_user.full_name is None:
         #get user id
-        full_name = "User ID: "+update.message.from_user.id
+        full_name = "User ID: "+str(update.message.from_user.id)
     else:
         full_name = update.message.from_user.full_name
     
@@ -444,19 +444,22 @@ async def secretary(update,message,context):
             f.write(date+'|'+time+'|'+message.replace('\n', ' ').replace('|','-')+'|'+row_id+'|'+str(note_vector)+'\n')
 
     # get the text between '"response": "' and '"}' and store it on chat.csv
-    response_string = response_string.split('"response": "')[1].split('"}')[0]
-    #store the message on username/chat.csv. make sure you replace the new lines with spaces
-    # but first check if the folder exists and if not create it
-    if not os.path.exists('db/'+username):
-        os.makedirs('db/'+username)
-    with open('db/'+username+'/chat.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ').replace('|','-')+'\n')
-    # store the response on username/chat.csv but replace new lines with \n
-    with open('db/'+username+'/chat.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')
+    pattern = r'"response":\s?"(.*?)"(?:,|\s?})'
 
-    return response_string
+
+    match = re.search(pattern, response_string)
+
+    if match:
+        new_response_string = match.group(1)
+        response_string = new_response_string
+    else:
+        print("No se encontró la respuesta.")
+
+    with open('chat.csv', 'a', encoding='utf-8') as f:
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')
     
+    print("################ CHAT response ############", response_string)
+    return response_string
     
    
 

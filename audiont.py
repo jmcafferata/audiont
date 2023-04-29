@@ -185,6 +185,82 @@ async def handle_voice(update, context):
     return ConversationHandler.END
 
 
+# function that handles the voice notes // función principal que maneja las notas de voz
+async def handle_audio(update, context):
+
+    message = update.message
+    await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
+
+    # get sender username, but first check if it's None
+    if update.message.from_user.username == None:
+        username = update.message.from_user.full_name
+    else:
+        username = update.message.from_user.username
+
+    try:
+
+        transcription = await ai.transcribe_audio(update)
+        response = None # Initialize the 'response' variable here
+
+        # check if message has caption (es un audio de WhatsApp)
+        if message.caption:
+
+            await update.message.reply_text("El audio dice:")
+            await update.message.reply_text(transcription)
+
+            # check if username is  config.my_username
+            if username == config.my_username:
+
+                csvm.store_to_csv(message=transcription)
+                # call the prompt function // llamar a la función prompt
+                response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username,update=update)
+                
+                # call the clean_options function // llamar a la función clean_options
+                response_text, options = await clean.clean_options(response)
+                
+                # add the options to the current response options
+                for option in options:
+                    current_response_options.append(option)
+            
+                # reply to the message with the summary and the 5 options // responder al mensaje con el resumen y las 5 opciones
+                await update.message.reply_text(response_text, reply_markup=InlineKeyboardMarkup(
+                    [
+                        [
+                            InlineKeyboardButton(text=options[0], callback_data="0")
+                        ],
+                        [
+                            InlineKeyboardButton(text=options[1], callback_data="1")
+                        ],
+                        [
+                            InlineKeyboardButton(text=options[2], callback_data="2")
+                        ],
+                        [
+                            InlineKeyboardButton(text=options[3], callback_data="3")
+                        ]
+                    ]
+                ))
+                return AWAIT_INSTRUCTIONS            
+
+        # if the message has no caption (it's a voice note)
+        else:
+
+            #if sender isn't jmcafferata
+            if username != config.my_username:
+                response = await ai.secretary(update,transcription,context)
+                
+            else:
+                response = await ai.chat(update,transcription,get_settings("GPTversion"))
+
+            await update.message.reply_text(response)
+        
+    except Exception as e:
+        # print and send the formatted traceback // imprimir y enviar el traceback formateado
+        traceback.print_exc()
+        await update.message.reply_text(traceback.format_exc())
+        
+        
+    return ConversationHandler.END
+
 # function that handles the voice notes when responding to a voice note // función principal que maneja las notas de voz cuando se responde a una nota de voz
 async def respond_audio(update, context):
     # call the transcribe_audio function // llamar a la función transcribe_audio
@@ -253,6 +329,11 @@ if __name__ == '__main__':
     # exclude conversation states // excluir estados de conversación
     voice_handler = MessageHandler(filters.VOICE & (~filters.COMMAND), handle_voice)
     application.add_handler(voice_handler)
+
+    # for when the bot receives a voice note // para cuando el bot recibe una nota de voz
+    # exclude conversation states // excluir estados de conversación
+    audio_handler = MessageHandler(filters.AUDIO & (~filters.COMMAND), handle_audio)
+    application.add_handler(audio_handler)
 
 
     #/chat3 command

@@ -24,10 +24,13 @@ import re
 import csv
 from nanoid import generate
 import asyncio
+import ast
 from telegram.error import BadRequest
 from telegram.error import RetryAfter
 import tiktoken
 import PyPDF2
+# import ast
+import shutil
 
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
@@ -211,6 +214,8 @@ async def chat(update,message,model,document_search):
     # initialize prompt
     prompt = []
 
+    similar_entries = ''
+
     # check if chat.csv exists in users/uid folder
     if not os.path.exists('users/'+str(update.message.from_user.id)+'/chat.csv'):
         # create chat.csv
@@ -232,13 +237,55 @@ async def chat(update,message,model,document_search):
         for index, row in chat_df.iterrows():
             prompt.append({"role": row['role'], "content": row['date']+" "+row['content']})
     else:
-        #get similar entiries in /users/uid/vectorized/vectorized.json
+        # get a list of the files in vectorized folder
+        files = os.listdir('users/'+str(update.message.from_user.id)+'/vectorized')
+        print('files: ', files)
+        docusearch_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": """Prompt: As a powerful language model, your task is to help users by providing relevant JSON documents based on their search query. A user will provide you with a search query and a list of available JSON documents. You must respond with an array of the files that are relevant to the query.
 
-        similar_entries = get_json_top_entries(message, 'users/'+str(update.message.from_user.id)+'/vectorized/vectorized_data.json', top_n=8)
-        prompt.append({"role": "user", "content": similar_entries})
+User: Search query: "Sustainable energy sources" 
+Available documents: ["Introduction to Renewable Energy.pdf.json", "Fossil Fuels and Climate Change.pdf.json", "Solar and Wind Power.pdf.json", "Nuclear Energy Pros and Cons.pdf.json", "Sustainable Energy Solutions.pdf.json", "The Future of Oil.pdf.json"]
+
+LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.json", "Sustainable Energy Solutions.pdf.json"]"""},
+                {"role": "user", "content": "Search query: " + message + "\nAvailable documents: " + str(files) + "\n\nLLM: ['"}
+
+            ]
+        )
+        print("################ docusearch_response ############", docusearch_response.choices[0].message.content)
+        # add the bracket so it's an array
+        docusearch_response = "['" + docusearch_response.choices[0].message.content
+
+        # get the text up until the first '] including the ']'
+        docusearch_response = docusearch_response[:docusearch_response.find(']')+1]
+
+        # get the list of files from the response
+        docusearch_file = ast.literal_eval(docusearch_response)
+
+        print("################ docusearch_file ############", docusearch_file)
+
+        final_similar_entries = ''
+        # for each file in the docusearch_response
+        for file in docusearch_file:
+            # send a message saying that the file is being searched
+            await update.message.reply_text("Buscando en " + file + "...")
+            # if file doesn't end with .json, add it
+            if not file.endswith('.json'):
+                file = file + '.json'
+            # if file is json
+            if file.endswith('.json'):
+                top_n = round(15/len(docusearch_file))
+                # get similar entries in the file
+                similar_entries = get_json_top_entries(message, 'users/'+str(update.message.from_user.id)+'/vectorized/'+file, top_n=top_n)
+                # truncate similar_entries to 5000/len(docusearch_file)
+                final_similar_entries += similar_entries[:round(5000/len(docusearch_file))]
+        prompt.append({"role": "user", "content": final_similar_entries})
+
     
 
-    print("################ similar entries ############", similar_entries)
+    print("################ similar entries ############\n", final_similar_entries)
 
 
     # add user message to prompt
@@ -376,7 +423,7 @@ def read_files(input_folder):
             print(file)
             if file.endswith('.txt'):
                 with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
-                    content.append((f.read(), file))
+                    content.append((f.read(), file, None))  # Add 'None' for the page number
             elif file.endswith('.pdf'):
                 pdf_obj = open(os.path.join(root, file), 'rb')
                 pdf_reader = PyPDF2.PdfFileReader(pdf_obj)
@@ -429,31 +476,47 @@ def vectorize_chunks(text_chunks, metadata,file):
 
     return vectorized_data
 
-async def vectorize(update,context,uid):
-    user_folder = 'users/'+uid+'/'
-    # the input folder is users/user_id/to_vectorize. check if it exists. if not create it
-    if not os.path.exists(user_folder+'to_vectorize'):
-        os.makedirs(user_folder+'to_vectorize')
-    input_folder = user_folder+'to_vectorize'
+async def vectorize(update, context, uid):
+    user_folder = 'users/' + uid + '/'
+    # Check if the input folder exists. If not, create it.
+    if not os.path.exists(user_folder + 'to_vectorize'):
+        os.makedirs(user_folder + 'to_vectorize')
+    input_folder = user_folder + 'to_vectorize'
     print("input_folder", input_folder)
-    vectorized_data = []
-    text_data = read_files(input_folder)
-    metadata = ''
-    for text, file,page_num in text_data:
-        text_chunks = split_text(text)
-        metadata = file + ' - Página'+ str(page_num)
-        vectorized_chunks = vectorize_chunks(text_chunks, metadata,file)
-        vectorized_data.extend(vectorized_chunks)
-    
-    # check if the output folder exists. if not create it
-    if not os.path.exists(user_folder+'vectorized'):
-        os.makedirs(user_folder+'vectorized')
-    if metadata == '':
-        metadata = 'vectorized_data'
-    with open(user_folder+'vectorized/vectorized_data.json', 'a', encoding='utf-8') as f:
-        # append the new data to the existing file
-        json.dump(vectorized_data, f, ensure_ascii=False)
 
+    text_data = read_files(input_folder)
+
+    # Check if the output folder exists. If not, create it.
+    if not os.path.exists(user_folder + 'vectorized'):
+        os.makedirs(user_folder + 'vectorized')
+
+    for text, file, page_num in text_data:
+        vectorized_data = []
+        metadata = file + ' - Página ' + str(page_num + 1) if page_num is not None else file
+        text_chunks = split_text(text)
+        vectorized_chunks = vectorize_chunks(text_chunks, metadata, file)
+        vectorized_data.extend(vectorized_chunks)
+
+        # Save the vectorized data for each file with its original name
+        json_filepath = user_folder + 'vectorized/' + file + '.json'
+
+        # Load the existing data from the JSON file
+        existing_data = []
+        if os.path.exists(json_filepath):
+            with open(json_filepath, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+
+        # Append the new data to the existing array
+        existing_data.extend(vectorized_data)
+
+        # Save the updated array back to the JSON file
+        with open(json_filepath, 'w', encoding='utf-8') as f:
+            json.dump(existing_data, f, ensure_ascii=False)
+
+    # Delete the files in the to_vectorize folder
+    for root, dirs, files in os.walk(input_folder):
+        for file in files:
+            os.remove(os.path.join(root, file))
 
 ################### v1 ############################
 

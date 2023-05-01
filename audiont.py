@@ -17,7 +17,7 @@ from telegram.ext import (
     TypeHandler,
     InlineQueryHandler,
     MessageHandler,
-    filters
+    filters,
 )
 # library used to handle conversations // librería usada para manejar conversaciones
 from telegram.ext import ConversationHandler
@@ -29,7 +29,7 @@ from datetime import datetime
 import csv  # library used to handle csv files // librería usada para manejar archivos csv
 import config as config  # import the config file // importar el archivo de configuración
 # library used to communicate with the Telegram bot // librería usada para comunicarse con el bot de Telegram
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 # import the decode_utf8 file // importar el archivo decode_utf8
 import modules.decode_utf8
 # import the convert_to_wav file // importar el archivo convert_to_wav
@@ -380,14 +380,16 @@ async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             ]
                         ]
                     ))
+    
+
 
 async def document_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if get_settings("document_search") == "True":
         write_settings(key="document_search",value="False")
-        await update.message.reply_text("document_search is now False")
+        await update.message.reply_text("Ahora no estás buscando entre tus documentos 🥲")
     else:
         write_settings(key="document_search",value="True")
-        await update.message.reply_text("document_search is now True")
+        await update.message.reply_text("Hacé preguntas sobre los documentos que subiste. Mientras más específicas, mejor 🫡🫡🫡")
 
 async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get the user id // obtener el id del usuario
@@ -400,6 +402,19 @@ async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         write_settings(key="flask_testing",value="True")
         await update.message.reply_text("flask_testing is now True")
+
+async def agregar_metadata(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # get the user id // obtener el id del usuario
+    user_id = update.message.from_user.id
+    # ask for the user (using a reply keyboard) what json file from users/uid/vectorized they want to add metadata to // preguntarle al usuario qué archivo json de users/uid/vectorized quiere agregarle metadata
+    # get the list of json files // obtener la lista de archivos json
+    json_files = os.listdir("users/"+str(user_id)+"/vectorized")
+    # create a reply keyboard with the json files // crear un reply keyboard con los archivos json
+    reply_keyboard = []
+    for json_file in json_files:
+        reply_keyboard.append([json_file])
+    # send the message // enviar el mensaje
+    await update.message.reply_text("Elegí el archivo al que le querés agregar metadata", reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
 
 # main function // función principal

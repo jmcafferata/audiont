@@ -281,11 +281,12 @@ LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.jso
                 final_similar_entries += similar_entries[:round(5000/len(docusearch_file))]
 
         prompt.append({"role": "user", "content": final_similar_entries})
+        print("################ similar entries ############\n", final_similar_entries)
+
 
     except Exception as e:
         print("################ ERROR IN DOCUMENT SEARCH ############", e)
     
-    print("################ similar entries ############\n", final_similar_entries)
 
 
     # add user message to prompt

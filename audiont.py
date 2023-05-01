@@ -369,7 +369,7 @@ async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     url = "Entrá a este link para subir un archivo:\n\n"
     if get_settings("flask_testing") == "True":
-        url +="http://localhost:5000/vectorizar/"+str(user_id)
+        url +=config.test_server+"/vectorizar/"+str(user_id)
     else:
         url += config.website+"/vectorizar/"+str(user_id)
 

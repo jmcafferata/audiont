@@ -222,21 +222,14 @@ async def chat(update,message,model,document_search):
         with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'w', encoding='utf-8') as f: 
             f.write('date|role|content\n')
 
-    # #get similar entries in notes.csv
-    if document_search == "False":
-        similar_entries = get_top_entries('db/notes.csv', message, top_n=8)
-        # System configuration
-        # open the text from prompts/audiont.txt
-        with open('prompts/chat.txt', 'r', encoding='utf-8') as f:
-            text = f.read()
-            prompt.append({"role": "system", "content": config.personalidad+config.vocabulario+similar_entries +"\n" +text})
+    prompt.append({"role": "system", "content": config.personalidad+config.vocabulario})
 
-        # add chat history to prompt
-        chat_df = pd.read_csv('users/'+str(update.message.from_user.id)+'/chat.csv', sep='|', encoding='utf-8', escapechar='\\')
-        chat_df = chat_df.tail(6)
-        for index, row in chat_df.iterrows():
-            prompt.append({"role": row['role'], "content": row['date']+" "+row['content']})
-    else:
+    # add chat history to prompt
+    chat_df = pd.read_csv('users/'+str(update.message.from_user.id)+'/chat.csv', sep='|', encoding='utf-8', escapechar='\\')
+    chat_df = chat_df.tail(6)
+    for index, row in chat_df.iterrows():
+        prompt.append({"role": row['role'], "content": row['date']+" "+row['content']})
+    try:
         # get a list of the files in vectorized folder
         files = os.listdir('users/'+str(update.message.from_user.id)+'/vectorized')
         print('files: ', files)
@@ -244,7 +237,7 @@ async def chat(update,message,model,document_search):
             model="gpt-3.5-turbo",
             temperature=0.2,
             messages=[
-                {"role": "system", "content": """Prompt: As a powerful language model, your task is to help users by providing relevant JSON documents based on their search query. A user will provide you with a search query and a list of available JSON documents. You must respond with an array of the files that are relevant to the query.
+                {"role": "system", "content": """Prompt: As a powerful language model, your task is to help users by providing relevant JSON documents based on their search query. A user will provide you with a search query and a list of available JSON documents. You must respond with an array of the files that are even remotely relevant to the query.
 
 User: Search query: "Sustainable energy sources" 
 Available documents: ["Introduction to Renewable Energy.pdf.json", "Fossil Fuels and Climate Change.pdf.json", "Solar and Wind Power.pdf.json", "Nuclear Energy Pros and Cons.pdf.json", "Sustainable Energy Solutions.pdf.json", "The Future of Oil.pdf.json"]
@@ -254,6 +247,7 @@ LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.jso
 
             ]
         )
+        
         print("################ docusearch_response ############", docusearch_response.choices[0].message.content)
         # add the bracket so it's an array
         docusearch_response = "['" + docusearch_response.choices[0].message.content
@@ -268,9 +262,13 @@ LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.jso
 
         final_similar_entries = ''
         # for each file in the docusearch_response
+
+        # send a new message saying that i'm writing
+        new_message = await update.message.reply_text("Escribiendo...✍️✍️")
         for file in docusearch_file:
-            # send a message saying that the file is being searched
-            await update.message.reply_text("Buscando en " + file + "...")
+            
+            # edit message saying that the file is being searched
+            await new_message.edit_text("Buscando en " + file + "...")
             # if file doesn't end with .json, add it
             if not file.endswith('.json'):
                 file = file + '.json'
@@ -281,19 +279,17 @@ LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.jso
                 similar_entries = get_json_top_entries(message, 'users/'+str(update.message.from_user.id)+'/vectorized/'+file, top_n=top_n)
                 # truncate similar_entries to 5000/len(docusearch_file)
                 final_similar_entries += similar_entries[:round(5000/len(docusearch_file))]
+
         prompt.append({"role": "user", "content": final_similar_entries})
 
+    except Exception as e:
+        print("################ ERROR IN DOCUMENT SEARCH ############", e)
     
-
     print("################ similar entries ############\n", final_similar_entries)
 
 
     # add user message to prompt
     prompt.append({"role": "user", "content": now.strftime("%d/%m/%Y %H:%M:%S")+" "+ message})
-
-    # add the response beginning to the prompt
-    if document_search == "False":
-        prompt.append({"role": "assistant", "content": '{"store_message":"'})
 
     if model == "3":
         model = "gpt-3.5-turbo"
@@ -315,40 +311,17 @@ LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.jso
 
     response_string = gpt_response.choices[0].message.content
 
-    if document_search == "True":
-        return response_string
-
-    # if message starts with 'True', store the user message on db/notes.csv
-    if response_string.startswith('True'):
-        with open('db/notes.csv', 'a', encoding='utf-8') as f:
-            date = now.strftime("%d/%m/%Y")
-            time = now.strftime("%H:%M:%S")
-            note_vector = get_embedding(message, 'text-embedding-ada-002')
-            row_id = str(generate('0123456789', 5))
-            f.write(date+'|'+time+'|'+message.replace('\n', ' ').replace('|','-')+'|'+row_id+'|'+str(note_vector)+'\n')
-
     # store the user message on chat.csv but replace new lines with \n
     with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'a', encoding='utf-8') as f:
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ').replace('|','-')+'\n')
     
-    # get the text from the assistant between '"response": "' and '"}' and store it on chat.csv
-    
-    pattern = r'"response":\s?"(.*?)"(?:,|\s?})'
-
-
-    match = re.search(pattern, response_string)
-
-    if match:
-        new_response_string = match.group(1)
-        response_string = new_response_string
-    else:
-        print("No se encontró la respuesta.")
 
     with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'a', encoding='utf-8') as f:
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')
     
     print("################ CHAT response ############", response_string)
     return response_string
+
 
 async def secretary(update,message,context):
     now = datetime.now()

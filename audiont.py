@@ -38,7 +38,7 @@ import modules.convert_to_wav
 import modules.csv_manipulation as csvm
 # import the ai_functions file // importar el archivo ai_functions
 import modules.ai_functions as ai
-import pathlib as Path
+from pathlib import Path
 import requests
 import pytz
 import urllib.request
@@ -56,6 +56,10 @@ from openai.embeddings_utils import cosine_similarity
 import traceback
 import json
 from telegram.constants import ParseMode
+from flask import Flask, request, redirect, url_for, flash
+from werkzeug.utils import secure_filename
+import os
+
 
 # function that reads settings.json (a key given by the user) and returns the value 
 def get_settings(key):
@@ -71,12 +75,36 @@ def write_settings(key,value):
         with open('settings.json', 'w') as outfile:
             json.dump(data, outfile)
 
+#function to check if user has folder in users/ folder. if not, create it
+def check_user_folder(user_id):
+    user_folder = Path("users/"+str(user_id))
+    if not user_folder.exists():
+        user_folder.mkdir(parents=True, exist_ok=True)
+        return False
+    else:
+        return True
+
+
 # CONTANTS // CONSTANTES
 
 # define the states of the conversation // definir los estados de la conversación
-ASK_NAME, ASK_DESCRIPTION,ASK_MESSAGES,AWAIT_INSTRUCTIONS,ASK_MORE_MESSAGES,ASK_PAYEE,CONFIRM_PAYMENT = range(7)
+AWAIT_INSTRUCTIONS = range(1)
+
+#start the conversation // iniciar la conversación
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    write_settings("uid",str(update.message.from_user.id))
+    #send a message // enviar un mensaje
+    await update.message.reply_text(
+        config.start_message + "\n\nTu user ID es: " + get_settings("uid")
+    )
+    # check if user has folder in users/ folder. if not, create it
+    check_user_folder(update.message.from_user.id)
+    return 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+
+    check_user_folder(update.message.from_user.id)
 
     await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
 
@@ -94,7 +122,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response = await ai.secretary(update,update.message.text,context)
            
         else:
-            response = await ai.chat(update,update.message.text,get_settings("GPTversion"))
+            response = await ai.chat(update,update.message.text,get_settings("GPTversion"),document_search)
 
         await update.message.reply_text(response)
         
@@ -106,10 +134,14 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # print and send the formatted traceback // imprimir y enviar el traceback formateado
         traceback.print_exc()
         await update.message.reply_text(traceback.format_exc())
+
+    
         
 
 # function that handles the voice notes // función principal que maneja las notas de voz
 async def handle_voice(update, context):
+
+    check_user_folder(update.message.from_user.id)
 
     message = update.message
     await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
@@ -172,7 +204,7 @@ async def handle_voice(update, context):
                 response = await ai.secretary(update,transcription,context)
                 
             else:
-                response = await ai.chat(update,transcription,get_settings("GPTversion"))
+                response = await ai.chat(update,transcription,get_settings("GPTversion"),document_search)
 
             await update.message.reply_text(response)
         
@@ -188,6 +220,8 @@ async def handle_voice(update, context):
 # function that handles the voice notes // función principal que maneja las notas de voz
 async def handle_audio(update, context):
 
+    check_user_folder(update.message.from_user.id)
+
     message = update.message
     await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
 
@@ -249,7 +283,7 @@ async def handle_audio(update, context):
                 response = await ai.secretary(update,transcription,context)
                 
             else:
-                response = await ai.chat(update,transcription,get_settings("GPTversion"))
+                response = await ai.chat(update,transcription,get_settings("GPTversion"),document_search)
 
             await update.message.reply_text(response)
         
@@ -260,6 +294,7 @@ async def handle_audio(update, context):
         
         
     return ConversationHandler.END
+
 
 # function that handles the voice notes when responding to a voice note // función principal que maneja las notas de voz cuando se responde a una nota de voz
 async def respond_audio(update, context):
@@ -281,12 +316,28 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = await ai.complete_prompt("answer", current_response_options[int(data)], update.callback_query.from_user.username, update)
         # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
         await update.callback_query.message.reply_text(response)
+    
+    if data == "vectorizar":
+        await update.callback_query.message.reply_text("Vectorizando...")
+        try:
+            await ai.vectorize(update=update,context=context,uid=get_settings("uid"))
+            await update.callback_query.message.reply_text("🎉 Vectorización completa!")
+            await update.callback_query.message.reply_text("🙏Ahora escribí algunos datos sobre el documento para que sea más fácil encontrarlo después (por ejemplo: Este es un texto del módulo 2 de la cátedra Arathorn) ⬇️⬇️ ")
+        except Exception as e:
+            # send traceback // enviar traceback
+            traceback.print_exc()
+            await update.callback_query.message.reply_text(traceback.format_exc())
+    
+    
     return ConversationHandler.END
     
     # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
     
 
 async def chat3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    
+    check_user_folder(update.message.from_user.id)
+
     # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
     try:
         write_settings(key="GPTversion",value="3")
@@ -297,6 +348,9 @@ async def chat3(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n',exception_traceback)
 
 async def chat4(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    
+    check_user_folder(update.message.from_user.id)
+
     # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
     try:
         write_settings(key="GPTversion",value="4")
@@ -306,8 +360,51 @@ async def chat4(update: Update, context: ContextTypes.DEFAULT_TYPE):
         exception_traceback = traceback.format_exc()
         print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n',exception_traceback)
 
+# a function that handles the /vectorizar command. It returns a link that takes them to redquequen.com/vectorizar/user_id // una función que maneja el comando /vectorizar. Devuelve un enlace que los lleva a redquequen.com/vectorizar/user_id
+async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # get the user id // obtener el id del usuario
+    user_id = update.message.from_user.id
+    # send a message with the link // enviar un mensaje con el enlace
+    #get flask_testing from settings.json
+
+    url = "Entrá a este link para subir un archivo:\n\n"
+    if get_settings("flask_testing") == "True":
+        url +="http://localhost:5000/vectorizar/"+str(user_id)
+    else:
+        url += config.website+"/vectorizar/"+str(user_id)
+
+    await update.message.reply_text(url, reply_markup=InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(text='Listo', callback_data="vectorizar")
+                            ]
+                        ]
+                    ))
+
+async def document_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if get_settings("document_search") == "True":
+        write_settings(key="document_search",value="False")
+        await update.message.reply_text("document_search is now False")
+    else:
+        write_settings(key="document_search",value="True")
+        await update.message.reply_text("document_search is now True")
+
+async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # get the user id // obtener el id del usuario
+    user_id = update.message.from_user.id
+    # send a message with the link // enviar un mensaje con el enlace
+    #get flask_testing from settings.json
+    if get_settings("flask_testing") == "True":
+        write_settings(key="flask_testing",value="False")
+        await update.message.reply_text("flask_testing is now False")
+    else:
+        write_settings(key="flask_testing",value="True")
+        await update.message.reply_text("flask_testing is now True")
+
+
 # main function // función principal
 if __name__ == '__main__':
+
 
     current_response_options = []
 
@@ -316,10 +413,11 @@ if __name__ == '__main__':
     # create the bot // crear el bot
     application = Application.builder().token(config.telegram_api_key).build()
 
-    # use ai.generate_embeddings(file,column) to turn the column full_text in users/jmcafferata/justTweets.csv into a list of embeddings
-    # print(ai.generate_embeddings("users/jmcafferata/cleandataNoRows.csv","full_text"))
 
-    
+    # start handler
+    start_handler = CommandHandler('start', start)
+    application.add_handler(start_handler)
+
     # for when the bot receives a text message // para cuando el bot recibe un archivo de audio
     text_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), handle_text)
     application.add_handler(text_handler)
@@ -343,6 +441,19 @@ if __name__ == '__main__':
     #/chat4 command
     chat4_handler = CommandHandler('chat4', chat4)
     application.add_handler(chat4_handler)
+
+    #/vectorizar command
+    vectorizar_handler = CommandHandler('vectorizar', vectorizar)
+    application.add_handler(vectorizar_handler)
+    
+    #/test command
+    flask_test_handler = CommandHandler('flask_test', flask_test)
+    application.add_handler(flask_test_handler)
+
+    # /document_search command
+    document_search_handler = CommandHandler('document_search', document_search)
+    application.add_handler(document_search_handler)
+
 
 
     # a callback query handler // un manejador de consulta de devolución de llamada

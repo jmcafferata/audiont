@@ -13,3 +13,4 @@ db/
 audios.csv
 *.pyc
 chat.csv
+users/

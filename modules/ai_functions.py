@@ -27,6 +27,7 @@ import asyncio
 from telegram.error import BadRequest
 from telegram.error import RetryAfter
 import tiktoken
+import PyPDF2
 
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
@@ -73,151 +74,6 @@ def check_and_compute_cosine_similarity(x, message_vector):
    
     return cosine_similarity(x, message_vector)
 
-################## GOOGLE SEARCH ############################
-
-def get_chunks(url,text):
-   
-    # get the html from the url
-    response = requests.get(url)
-    print("########### ENTERING GET CHUNKS ###########")
-    html = response.text
-
-    # parse the html
-    soup = BeautifulSoup(html, "html.parser")
-
-    tag_types = ["p", "ul", "h1", "h2", "blockquote"]
-
-    # create an empty dataframe
-    df = pd.DataFrame(columns=["text", "embedding"])
-
-    
-    for tag_type in tag_types:
-        tags = soup.find_all(tag_type)
-        for tag in tags:
-            # check tag isnt empty
-            if tag.text == "":
-                continue
-            tag_embedding = get_embedding(str(tag.text), "text-embedding-ada-002")
-            print(tag.text)
-
-            # Create a new DataFrame for the current row
-            new_row = pd.DataFrame({"text": [tag.text], "embedding": [tag_embedding]})
-
-            # Concatenate the existing DataFrame (df) with the new_row DataFrame
-            df = pd.concat([df, new_row], ignore_index=True)
-        
-    
-    # get the embeddings for the query
-    query_embedding = get_embedding(text,'text-embedding-ada-002')
-
-    # calculate the cosine similarity between the query and each chunk
-    df["similarity"] = df["embedding"].apply(lambda x: cosine_similarity(x, query_embedding))
-
-    # sort the chunks by similarity
-    df = df.sort_values(by="similarity", ascending=False)
-
-    # get the top 5 chunks
-    top_chunks = df["text"].head(1).values
-
-    # join the top 5 chunks into a single string
-    summary_chunks = " ".join(top_chunks)
-
-    print(summary_chunks)
-
-    # print the summary
-
-    return summary_chunks
- 
-def google(query,message):
-    # delete anything that comes after a \n
-    query = re.sub(r"\\n.*", "", query)
-    # delete anything that comes after a -
-    query = re.sub(r"-.*", "", query)
-
-    print("Query:", query)
-
-    url = "https://www.googleapis.com/customsearch/v1"
-
-    params = {
-        "key": config.google_api_key,
-        "cx": '35af1fa5e6c614873',
-        "q": query,
-    }
-
-    
-    max_attempts = 3
-    success = False
-
-    for attempt in range(max_attempts):
-        try:
-            response = requests.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
-
-            if 'items' in data:
-                success = True
-                break
-            else:
-                print(f"No results found or an error occurred on attempt {attempt + 1}")
-                print("Response data:", data)
-
-        except requests.exceptions.HTTPError as e:
-            print(f"An error occurred on attempt {attempt + 1}: {e}")
-
-        if not success:
-            print("Trying again...")
-
-    if not success:
-        print("All attempts failed.")
-        return
-    
-        
-    # get the link and snippet elements from the first 10 items
-    chunks_and_links = []
-
-    max_items = len(data["items"])
-    # print all links
-    item_index = 0
-
-    while item_index < max_items:
-        item = data["items"][item_index]
-        url = item["link"]
-        
-        print("######## LINK ########")
-
-        # Verificar si la URL no es un archivo PDF
-        if url.lower().endswith(".pdf"):
-            item_index += 1
-            continue
-
-        print(url)
-        result_chunks = get_chunks(url, message)
-        chunks_and_links.append({
-            "link": url,
-            "snippet": item["snippet"],
-            "chunks": result_chunks
-        })
-
-    item_index += 1
-
-    
-    return chunks_and_links
-
-async def find_in_google(message):
-    
-    print("About to ask GPT-3 for a query to search in Google for the following task:\n"+message)
-    # get latest message from the user
-    gpt_response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role":"user","content":"Create the perfect google query to get information for the following task:\n"+message}]
-        )
-    gpt_response = gpt_response.choices[0].message.content
-    print("################ GPT-3 response ############",gpt_response)
-    querychunks_and_links = google(gpt_response,message)
-    results_chunks = ""
-    for chunk in querychunks_and_links:
-        results_chunks += chunk["chunks"]+"\n"
-    return results_chunks
 
 ################### AUDIO TRANSCRIPTION ############################
 
@@ -267,6 +123,49 @@ async def transcribe_audio(update):
 
 
             return transcription_object["text"]
+        
+##################### JSON TOP ENTRIES ############################
+def get_json_top_entries(query, database_name, top_n=5):
+   
+    # read the output.json file
+    with open(database_name, 'r', encoding='utf-8') as f:
+        data = f.read()
+
+    # convert the json string to a list of dictionaries
+    data = json.loads(data)
+
+    # create a dataframe with the data
+    df = pd.DataFrame(data)
+
+    # create a new column with the embeddings converted to string
+    df['embedding'] = df['embedding'].apply(lambda x: str(x))
+
+    mensajes_sim = df[['filename','metadata', 'text_chunk', 'embedding']].copy()
+    print('mensajes_sim: ', mensajes_sim)
+
+    message_vector = get_embedding(query, 'text-embedding-ada-002')
+
+    # Calculate cosine similarity between the message vector and the vectors in the output.json
+    mensajes_sim['similarity'] = mensajes_sim['embedding'].apply(lambda x: check_and_compute_cosine_similarity(x, message_vector))
+    print('similarity: ', mensajes_sim['similarity'])
+
+    # sort by similarity
+    mensajes_sim = mensajes_sim.sort_values(by=['similarity'], ascending=False)
+    print('mensajes_sim: ', mensajes_sim)
+
+    now = datetime.now(timezone)
+    
+    related_data = ''
+
+    for index, row in mensajes_sim[['metadata', 'text_chunk']].head(top_n).iterrows():
+        print(str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n')
+        try:
+            related_data += str(row['filename']) + ' - ' + str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n'
+        except:
+            related_data += str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n'
+    
+    return related_data
+
 
 
 ################### v3 ############################
@@ -303,50 +202,57 @@ def get_top_entries(db, query, top_n=15):
     return similar_entries
 
 
-async def chat(update,message,model):
+async def chat(update,message,model,document_search):
 
     now = datetime.now()
 
     print("################# ENTERING CHAT MODE #################")
 
-    # check if chat.csv exists. if not, create it
-    if not os.path.isfile('chat.csv'):
-        with open('chat.csv', 'w') as f:
-            f.write('date|role|content\n')
-
-    #get similar entries in notes.csv
-    similar_entries = get_top_entries('db/notes.csv', message, top_n=8)
-    
     # initialize prompt
     prompt = []
 
-    # System configuration
-    # open the text from prompts/audiont.txt
-    with open('prompts/chat.txt', 'r', encoding='utf-8') as f:
-        text = f.read()
-        prompt.append({"role": "system", "content": config.personalidad+config.vocabulario+similar_entries +"\n" +text})
+    # check if chat.csv exists in users/uid folder
+    if not os.path.exists('users/'+str(update.message.from_user.id)+'/chat.csv'):
+        # create chat.csv
+        with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'w', encoding='utf-8') as f: 
+            f.write('date|role|content\n')
+
+    # #get similar entries in notes.csv
+    if document_search == "False":
+        similar_entries = get_top_entries('db/notes.csv', message, top_n=8)
+        # System configuration
+        # open the text from prompts/audiont.txt
+        with open('prompts/chat.txt', 'r', encoding='utf-8') as f:
+            text = f.read()
+            prompt.append({"role": "system", "content": config.personalidad+config.vocabulario+similar_entries +"\n" +text})
+
+        # add chat history to prompt
+        chat_df = pd.read_csv('users/'+str(update.message.from_user.id)+'/chat.csv', sep='|', encoding='utf-8', escapechar='\\')
+        chat_df = chat_df.tail(6)
+        for index, row in chat_df.iterrows():
+            prompt.append({"role": row['role'], "content": row['date']+" "+row['content']})
+    else:
+        #get similar entiries in /users/uid/vectorized/vectorized.json
+
+        similar_entries = get_json_top_entries(message, 'users/'+str(update.message.from_user.id)+'/vectorized/vectorized_data.json', top_n=8)
+        prompt.append({"role": "user", "content": similar_entries})
+    
 
     print("################ similar entries ############", similar_entries)
 
-    # add chat history to prompt
-    chat_df = pd.read_csv('chat.csv', sep='|', encoding='utf-8', escapechar='\\')
-    chat_df = chat_df.tail(6)
-    for index, row in chat_df.iterrows():
-        prompt.append({"role": row['role'], "content": row['date']+" "+row['content']})
 
     # add user message to prompt
     prompt.append({"role": "user", "content": now.strftime("%d/%m/%Y %H:%M:%S")+" "+ message})
 
     # add the response beginning to the prompt
-    prompt.append({"role": "assistant", "content": '{"store_message":"'})
-
+    if document_search == "False":
+        prompt.append({"role": "assistant", "content": '{"store_message":"'})
 
     if model == "3":
         model = "gpt-3.5-turbo"
     else:
         model = "gpt-4"
 
-    print(str(prompt))
 
     gpt_response = openai.ChatCompletion.create(
         model=model,
@@ -362,6 +268,9 @@ async def chat(update,message,model):
 
     response_string = gpt_response.choices[0].message.content
 
+    if document_search == "True":
+        return response_string
+
     # if message starts with 'True', store the user message on db/notes.csv
     if response_string.startswith('True'):
         with open('db/notes.csv', 'a', encoding='utf-8') as f:
@@ -372,7 +281,7 @@ async def chat(update,message,model):
             f.write(date+'|'+time+'|'+message.replace('\n', ' ').replace('|','-')+'|'+row_id+'|'+str(note_vector)+'\n')
 
     # store the user message on chat.csv but replace new lines with \n
-    with open('chat.csv', 'a', encoding='utf-8') as f:
+    with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'a', encoding='utf-8') as f:
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ').replace('|','-')+'\n')
     
     # get the text from the assistant between '"response": "' and '"}' and store it on chat.csv
@@ -388,7 +297,7 @@ async def chat(update,message,model):
     else:
         print("No se encontró la respuesta.")
 
-    with open('chat.csv', 'a', encoding='utf-8') as f:
+    with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'a', encoding='utf-8') as f:
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')
     
     print("################ CHAT response ############", response_string)
@@ -414,11 +323,8 @@ async def secretary(update,message,context):
     #embed and store the message in db/messages.csv
     message_vector = get_embedding(message, 'text-embedding-ada-002')
 
-    with open('db/messages.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message.replace('\n', ' ')+'|'+str(message_vector)+'|'+str(generate('0123456789', 5))+'\n')
-    
     #get top entries from db/notes.csv
-    related_notes = get_top_entries('db/notes.csv', message, 10)
+    related_notes = get_top_entries('db/notes.csv', message, 15)
     #truncate the string to 2000 characters
     related_notes = related_notes[:2000]
     print("related_notes", related_notes)
@@ -433,15 +339,6 @@ async def secretary(update,message,context):
     )
     response_string = gpt_response.choices[0].message.content
     print("response_string", response_string)
-    # if response_string starts with "True":
-    if response_string.startswith('True'):
-        #store user message on db/notes.csv that has date|time|content|row_id|embedding format
-        with open('db/messages.csv', 'a', encoding='utf-8') as f:
-            date = now.strftime("%d/%m/%Y")
-            time = now.strftime("%H:%M:%S")
-            note_vector = get_embedding(message, 'text-embedding-ada-002')
-            row_id = str(generate('0123456789', 5))
-            f.write(date+'|'+time+'|'+message.replace('\n', ' ').replace('|','-')+'|'+row_id+'|'+str(note_vector)+'\n')
 
     # get the text between '"response": "' and '"}' and store it on chat.csv
     pattern = r'"response":\s?"(.*?)"(?:,|\s?})'
@@ -455,13 +352,108 @@ async def secretary(update,message,context):
     else:
         print("No se encontró la respuesta.")
 
-    with open('chat.csv', 'a', encoding='utf-8') as f:
+    #check if the user has a chat.csv
+    if not os.path.exists('users/'+str(update.message.from_user.id)+'/chat.csv'):
+        #create chat.csv
+        with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'w', encoding='utf-8') as f:
+            f.write('date|role|content\n')
+
+    with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'a', encoding='utf-8') as f:
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')
     
     print("################ CHAT response ############", response_string)
     return response_string
     
-   
+################### VECTORIZE ############################
+
+def read_files(input_folder):
+    content = []
+    for root, dirs, files in os.walk(input_folder):
+        counter = 0
+        counter_end = len(files)
+        for file in files:
+            print('Progress: {}/{}'.format(counter, counter_end))
+            print(file)
+            if file.endswith('.txt'):
+                with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
+                    content.append((f.read(), file))
+            elif file.endswith('.pdf'):
+                pdf_obj = open(os.path.join(root, file), 'rb')
+                pdf_reader = PyPDF2.PdfFileReader(pdf_obj)
+                for page_num in range(pdf_reader.numPages):
+                    content.append((pdf_reader.getPage(page_num).extractText(), file, page_num))
+                pdf_obj.close()
+            counter += 1
+    print(len(content))
+    return content
+
+def split_text(text, chunk_size=2048):
+    words = text.split()
+    chunks = []
+    current_chunk = []
+    counter = 0
+    counter_end = len(words)
+
+    for word in words:
+        print('Progress: {}/{}'.format(counter, counter_end))
+
+        if len(' '.join(current_chunk) + ' ' + word) < chunk_size:
+            current_chunk.append(word)
+        else:
+            chunks.append(' '.join(current_chunk))
+            current_chunk = [word]
+        counter += 1
+
+
+    if current_chunk:
+        chunks.append(' '.join(current_chunk))
+
+
+    return chunks
+
+def vectorize_chunks(text_chunks, metadata,file):
+    counter = 0
+    counter_end = len(text_chunks)
+    vectorized_data = []
+
+    for chunk in text_chunks:
+        print('Progress: {}/{}'.format(counter, counter_end))
+        embedding = get_embedding(chunk,"text-embedding-ada-002")
+        vectorized_data.append({
+            'filename': file,
+            'metadata': metadata,
+            'text_chunk': chunk,
+            'embedding': embedding,
+        })
+        counter += 1
+
+    return vectorized_data
+
+async def vectorize(update,context,uid):
+    user_folder = 'users/'+uid+'/'
+    # the input folder is users/user_id/to_vectorize. check if it exists. if not create it
+    if not os.path.exists(user_folder+'to_vectorize'):
+        os.makedirs(user_folder+'to_vectorize')
+    input_folder = user_folder+'to_vectorize'
+    print("input_folder", input_folder)
+    vectorized_data = []
+    text_data = read_files(input_folder)
+    metadata = ''
+    for text, file,page_num in text_data:
+        text_chunks = split_text(text)
+        metadata = file + ' - Página'+ str(page_num)
+        vectorized_chunks = vectorize_chunks(text_chunks, metadata,file)
+        vectorized_data.extend(vectorized_chunks)
+    
+    # check if the output folder exists. if not create it
+    if not os.path.exists(user_folder+'vectorized'):
+        os.makedirs(user_folder+'vectorized')
+    if metadata == '':
+        metadata = 'vectorized_data'
+    with open(user_folder+'vectorized/vectorized_data.json', 'a', encoding='utf-8') as f:
+        # append the new data to the existing file
+        json.dump(vectorized_data, f, ensure_ascii=False)
+
 
 ################### v1 ############################
 

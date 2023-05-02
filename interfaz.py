@@ -7,6 +7,7 @@ import config
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'users/'
 app.config['APPLICATION_ROOT'] = '/'+config.bot_code
+app.static_folder = '/'+config.bot_code+'/static'
 
 
 # Make sure to use a secret key for your application

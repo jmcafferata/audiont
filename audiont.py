@@ -117,8 +117,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         #get sender full name
         full_name = update.message.from_user.full_name
 
-        #if sender isn't jmcafferata
-        if username != config.my_username:
+        #if sender isn't in the approved users list, send a message and return
+        if username not in config.approved_users:
             response = await ai.secretary(update,update.message.text,context)
            
         else:
@@ -371,7 +371,7 @@ async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if get_settings("flask_testing") == "True":
         url +=config.test_server+"/vectorizar/"+str(user_id)
     else:
-        url += config.website+"/vectorizar/"+str(user_id)
+        url += config.website+"/"+config.bot_code+"/vectorizar/"+str(user_id)
 
     await update.message.reply_text(url, reply_markup=InlineKeyboardMarkup(
                         [

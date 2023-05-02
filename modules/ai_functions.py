@@ -393,6 +393,7 @@ def read_files(input_folder):
         counter = 0
         counter_end = len(files)
         for file in files:
+        
             print('Progress: {}/{}'.format(counter, counter_end))
             print(file)
             if file.endswith('.txt'):
@@ -464,7 +465,14 @@ async def vectorize(update, context, uid):
     if not os.path.exists(user_folder + 'vectorized'):
         os.makedirs(user_folder + 'vectorized')
 
+    files_to_vectorize = [file for _, file, _ in text_data]
+        
+    await update.callback_query.message.reply_text("💿 Vectorizando + "+str(len(files_to_vectorize))+"...")
+
     for text, file, page_num in text_data:
+
+
+
         vectorized_data = []
         metadata = file + ' - Página ' + str(page_num + 1) if page_num is not None else file
         text_chunks = split_text(text)
@@ -473,8 +481,6 @@ async def vectorize(update, context, uid):
 
         # Save the vectorized data for each file with its original name
         json_filepath = user_folder + 'vectorized/' + file + '.json'
-
-        await update.callback_query.message.reply_text("💿 Vectorizando " + file + "...")
 
         # Load the existing data from the JSON file
         existing_data = []

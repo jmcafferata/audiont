@@ -6,6 +6,7 @@ import config
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'users/'
+app.config['APPLICATION_ROOT'] = '/'+config.bot_code
 
 
 # Make sure to use a secret key for your application
@@ -15,7 +16,7 @@ app.secret_key = "your-secret-key"
 # This code is used to upload a file to a user's folder. It is used in the vectorizar.html file to upload the file. It is also used in the app.py file to save the file in the user's folder.
 
 
-@app.route('/'+config.bot_code+'/vectorizar/<user_id>', methods=['GET', 'POST'])
+@app.route('/vectorizar/<user_id>', methods=['GET', 'POST'])
 def upload_file(user_id):
     if request.method == 'POST':
         # Check if the file is present in the request
@@ -48,4 +49,4 @@ def upload_file(user_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True,port=config.port)
+    app.run(debug=True)

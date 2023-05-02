@@ -466,6 +466,9 @@ async def vectorize(update, context, uid):
         os.makedirs(user_folder + 'vectorized')
 
     files_to_vectorize = [file for _, file, _ in text_data]
+
+    #delete duplicates from files_to_vectorize
+    files_to_vectorize = list(dict.fromkeys(files_to_vectorize))
         
     await update.callback_query.message.reply_text("💿 Vectorizando + "+str(files_to_vectorize)+"...")
 

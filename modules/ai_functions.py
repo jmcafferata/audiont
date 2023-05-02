@@ -473,7 +473,8 @@ async def vectorize(update, context, uid):
 
         # Save the vectorized data for each file with its original name
         json_filepath = user_folder + 'vectorized/' + file + '.json'
-        await update.message.reply_text("💿 Vectorizando " + file + "...")
+
+        await update.callback_query.message.reply_text("💿 Vectorizando " + file + "...")
 
         # Load the existing data from the JSON file
         existing_data = []

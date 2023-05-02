@@ -467,7 +467,7 @@ async def vectorize(update, context, uid):
 
     files_to_vectorize = [file for _, file, _ in text_data]
         
-    await update.callback_query.message.reply_text("💿 Vectorizando + "+str(len(files_to_vectorize))+"...")
+    await update.callback_query.message.reply_text("💿 Vectorizando + "+str(files_to_vectorize)+"...")
 
     for text, file, page_num in text_data:
 

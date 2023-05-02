@@ -28,7 +28,7 @@ import ast
 from telegram.error import BadRequest
 from telegram.error import RetryAfter
 import tiktoken
-import PyPDF2
+import PyPDF4
 # import ast
 import shutil
 
@@ -400,7 +400,7 @@ def read_files(input_folder):
                     content.append((f.read(), file, None))  # Add 'None' for the page number
             elif file.endswith('.pdf'):
                 pdf_obj = open(os.path.join(root, file), 'rb')
-                pdf_reader = PyPDF2.PdfFileReader(pdf_obj)
+                pdf_reader = PyPDF4.PdfFileReader(pdf_obj)
                 for page_num in range(pdf_reader.numPages):
                     content.append((pdf_reader.getPage(page_num).extractText(), file, page_num))
                 pdf_obj.close()
@@ -473,7 +473,7 @@ async def vectorize(update, context, uid):
 
         # Save the vectorized data for each file with its original name
         json_filepath = user_folder + 'vectorized/' + file + '.json'
-        await context.bot.send_message(chat_id=update.message.chat_id, text="💾💿 Vectorizando " + file + "...")
+        await update.message.reply_text("💿 Vectorizando " + file + "...")
 
         # Load the existing data from the JSON file
         existing_data = []

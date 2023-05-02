@@ -6,7 +6,6 @@ import config
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'users/'
-app.config['APPLICATION_ROOT'] = '/'+config.bot_code
 
 
 # Make sure to use a secret key for your application
@@ -49,4 +48,4 @@ def upload_file(user_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True,port=config.port)

@@ -473,6 +473,7 @@ async def vectorize(update, context, uid):
 
         # Save the vectorized data for each file with its original name
         json_filepath = user_folder + 'vectorized/' + file + '.json'
+        await context.bot.send_message(chat_id=update.message.chat_id, text="💾💿 Vectorizando " + file + "...")
 
         # Load the existing data from the JSON file
         existing_data = []

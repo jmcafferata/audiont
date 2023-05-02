@@ -318,11 +318,10 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.callback_query.message.reply_text(response)
     
     if data == "vectorizar":
-        await update.callback_query.message.reply_text("Vectorizando...")
         try:
             await ai.vectorize(update=update,context=context,uid=get_settings("uid"))
             await update.callback_query.message.reply_text("🎉 Vectorización completa!")
-            await update.callback_query.message.reply_text("🙏Ahora escribí algunos datos sobre el documento para que sea más fácil encontrarlo después (por ejemplo: Este es un texto del módulo 2 de la cátedra Arathorn) ⬇️⬇️ ")
+            await update.callback_query.message.reply_text("🙏Recordá mencionar el nombre del documento cuando quieras consultarlo")
         except Exception as e:
             # send traceback // enviar traceback
             traceback.print_exc()

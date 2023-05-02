@@ -205,7 +205,7 @@ def get_top_entries(db, query, top_n=15):
     return similar_entries
 
 
-async def chat(update,message,model,document_search):
+async def chat(update,message,model):
 
     now = datetime.now()
 
@@ -268,7 +268,7 @@ LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.jso
         for file in docusearch_file:
             
             # edit message saying that the file is being searched
-            await new_message.edit_text("Buscando en " + file + "...")
+            await new_message.edit_text("🔬 Buscando en " + file + "...")
             # if file doesn't end with .json, add it
             if not file.endswith('.json'):
                 file = file + '.json'
@@ -387,25 +387,36 @@ async def secretary(update,message,context):
     
 ################### VECTORIZE ############################
 
+import pdfplumber
+
 def read_files(input_folder):
     content = []
     for root, dirs, files in os.walk(input_folder):
         counter = 0
         counter_end = len(files)
         for file in files:
-        
-            print('Progress: {}/{}'.format(counter, counter_end))
-            print(file)
-            if file.endswith('.txt'):
-                with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
-                    content.append((f.read(), file, None))  # Add 'None' for the page number
-            elif file.endswith('.pdf'):
-                pdf_obj = open(os.path.join(root, file), 'rb')
-                pdf_reader = PyPDF4.PdfFileReader(pdf_obj)
-                for page_num in range(pdf_reader.numPages):
-                    content.append((pdf_reader.getPage(page_num).extractText(), file, page_num))
-                pdf_obj.close()
-            counter += 1
+            # if file name doesnt start with metadata_
+            if not file.startswith('metadata_'):
+                print('Progress: {}/{}'.format(counter, counter_end))
+                print(file)
+                # get the file name without the extension
+                file_name = os.path.splitext(file)[0]
+                # get the metadata from the txt file
+                if os.path.exists(os.path.join(root, 'metadata_' + file_name+'.txt')):
+                    with open(os.path.join(root, 'metadata_' + file_name+'.txt'), 'r', encoding='utf-8') as f:
+                        metadata = f.read()
+
+                if file.endswith('.txt'):
+                    with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
+                        content.append((f.read(), file, None,metadata))  # Add 'None' for the page number
+                elif file.endswith('.pdf'):
+                    with pdfplumber.open(os.path.join(root, file)) as pdf:
+                        for page_num in range(len(pdf.pages)):
+                            page = pdf.pages[page_num]
+                            text = page.extract_text()
+                            content.append((text, file, page_num,metadata))
+                            print(content)
+                counter += 1
     print(len(content))
     return content
 
@@ -465,19 +476,17 @@ async def vectorize(update, context, uid):
     if not os.path.exists(user_folder + 'vectorized'):
         os.makedirs(user_folder + 'vectorized')
 
-    files_to_vectorize = [file for _, file, _ in text_data]
+    # get all the filenames to vectorize
+    files_to_vectorize = [file for text, file, page_num,metadata in text_data]
 
     #delete duplicates from files_to_vectorize
     files_to_vectorize = list(dict.fromkeys(files_to_vectorize))
         
-    await update.callback_query.message.reply_text("💿 Vectorizando + "+str(files_to_vectorize)+"...")
+    await update.callback_query.message.reply_text("💿 Vectorizando "+str(files_to_vectorize)+"...")
 
-    for text, file, page_num in text_data:
-
-
-
+    for text, file, page_num,metadata in text_data:
         vectorized_data = []
-        metadata = file + ' - Página ' + str(page_num + 1) if page_num is not None else file
+        metadata += ' - '+ file + ' - Página ' + str(page_num + 1) if page_num is not None else file 
         text_chunks = split_text(text)
         vectorized_chunks = vectorize_chunks(text_chunks, metadata, file)
         vectorized_data.extend(vectorized_chunks)

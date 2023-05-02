@@ -122,7 +122,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response = await ai.secretary(update,update.message.text,context)
            
         else:
-            response = await ai.chat(update,update.message.text,get_settings("GPTversion"),document_search)
+            response = await ai.chat(update,update.message.text,get_settings("GPTversion"))
 
         await update.message.reply_text(response)
         
@@ -204,7 +204,7 @@ async def handle_voice(update, context):
                 response = await ai.secretary(update,transcription,context)
                 
             else:
-                response = await ai.chat(update,transcription,get_settings("GPTversion"),document_search)
+                response = await ai.chat(update,transcription,get_settings("GPTversion"))
 
             await update.message.reply_text(response)
         
@@ -283,7 +283,7 @@ async def handle_audio(update, context):
                 response = await ai.secretary(update,transcription,context)
                 
             else:
-                response = await ai.chat(update,transcription,get_settings("GPTversion"),document_search)
+                response = await ai.chat(update,transcription,get_settings("GPTversion"))
 
             await update.message.reply_text(response)
         
@@ -368,9 +368,11 @@ async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     url = "Entrá a este link para subir un archivo:\n\n"
     if get_settings("flask_testing") == "True":
-        url +=config.test_server+"/vectorizar/"+str(user_id)
+        url +=config.test_server+"/"+config.bot_code+"/vectorizar/"+str(user_id)
     else:
         url += config.website+"/"+config.bot_code+"/vectorizar/"+str(user_id)
+
+    url += "\n\nPor favor 🤲 chequeá que el documento tenga un nombre que lo identifique bien, por ejemplo: 'Resúmenes de la materia Arte Indoamericano'"
 
     await update.message.reply_text(url, reply_markup=InlineKeyboardMarkup(
                         [
@@ -380,15 +382,6 @@ async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         ]
                     ))
     
-
-
-async def document_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if get_settings("document_search") == "True":
-        write_settings(key="document_search",value="False")
-        await update.message.reply_text("Ahora no estás buscando entre tus documentos 🥲")
-    else:
-        write_settings(key="document_search",value="True")
-        await update.message.reply_text("Hacé preguntas sobre los documentos que subiste. Mientras más específicas, mejor 🫡🫡🫡")
 
 async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get the user id // obtener el id del usuario
@@ -402,18 +395,6 @@ async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
         write_settings(key="flask_testing",value="True")
         await update.message.reply_text("flask_testing is now True")
 
-async def agregar_metadata(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # get the user id // obtener el id del usuario
-    user_id = update.message.from_user.id
-    # ask for the user (using a reply keyboard) what json file from users/uid/vectorized they want to add metadata to // preguntarle al usuario qué archivo json de users/uid/vectorized quiere agregarle metadata
-    # get the list of json files // obtener la lista de archivos json
-    json_files = os.listdir("users/"+str(user_id)+"/vectorized")
-    # create a reply keyboard with the json files // crear un reply keyboard con los archivos json
-    reply_keyboard = []
-    for json_file in json_files:
-        reply_keyboard.append([json_file])
-    # send the message // enviar el mensaje
-    await update.message.reply_text("Elegí el archivo al que le querés agregar metadata", reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
 
 # main function // función principal
@@ -463,11 +444,6 @@ if __name__ == '__main__':
     #/test command
     flask_test_handler = CommandHandler('flask_test', flask_test)
     application.add_handler(flask_test_handler)
-
-    # /document_search command
-    document_search_handler = CommandHandler('document_search', document_search)
-    application.add_handler(document_search_handler)
-
 
 
     # a callback query handler // un manejador de consulta de devolución de llamada

@@ -1,34 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Videon't</title>
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  </head>
-  <body>
-    <div class="content-wrapper">
-      <form method="post" enctype="multipart/form-data" id="file-upload-form">
-        <div class="file-input-wrapper">
-          <label for="file-input">
-            <i class="upload-icon"></i>
-          </label>
-          <input type="file" name="file" id="file-input" />
-        </div>
-      </form>
-    </div>
-    <script>
-      document
-        .querySelector("#file-input")
-        .addEventListener("change", function (event) {
-          if (event.target.files.length) {
-            document.getElementById("file-upload-form").submit();
-          }
-        });
-    </script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Vectorizar | Audion't</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+  <div class="content-wrapper">
+    <form method="post" enctype="multipart/form-data" id="file-upload-form">
+      <div class="file-input-wrapper">
+        <label for="file-input">
+          <i class="upload-icon"></i>
+        </label>
+        <input type="file" name="file" id="file-input" />
+      </div>
+      <div class="text-input-div">
+        <label for="file-info">Poné algo de info sobre el archivo 👇</label>
+        <input type="text" name="file_info" id="file-info" placeholder="Clase de artes mixtas del 4 de abril" />
+        <button id="submit-button">Subir</button>
+      </div>
+    </form>
+    <div class="progress-bar-wrapper" style="display: none;">
+      <div class="progress-bar"></div>
+  </div>
+  <script>
+    document
+      .querySelector("#file-input")
+      .addEventListener("change", function (event) {
+        if (event.target.files.length) {
+          document.querySelector(".text-input-div").style.display = "flex";
+        }
+      });
+      // on button click, submit form
+      document.querySelector("#submit-button").addEventListener("click", function (event) {
+       
+
+        document.querySelector("#file-upload-form").submit();
+        
+
+        
+      });
+  </script>
+</body>
+
 </html>

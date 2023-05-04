@@ -61,21 +61,25 @@ from werkzeug.utils import secure_filename
 import os
 
 
-# function that reads settings.json (a key given by the user) and returns the value 
+# function that reads settings.json (a key given by the user) and returns the value
 def get_settings(key):
     with open('settings.json') as json_file:
         data = json.load(json_file)
         return data[key]
-    
+
 # function that writes to settings.json (a key given by the user) and returns the value
-def write_settings(key,value):
+
+
+def write_settings(key, value):
     with open('settings.json') as json_file:
         data = json.load(json_file)
         data[key] = value
         with open('settings.json', 'w') as outfile:
             json.dump(data, outfile)
 
-#function to check if user has folder in users/ folder. if not, create it
+# function to check if user has folder in users/ folder. if not, create it
+
+
 def check_user_folder(user_id):
     user_folder = Path("users/"+str(user_id))
     if not user_folder.exists():
@@ -90,19 +94,21 @@ def check_user_folder(user_id):
 # define the states of the conversation // definir los estados de la conversación
 AWAIT_INSTRUCTIONS = range(1)
 
-#start the conversation // iniciar la conversación
+# start the conversation // iniciar la conversación
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    write_settings("uid",str(update.message.from_user.id))
-    #send a message // enviar un mensaje
+    write_settings("uid", str(update.message.from_user.id))
+    # send a message // enviar un mensaje
     await update.message.reply_text(
         config.start_message + "\n\nTu user ID es: " + get_settings("uid")
     )
     # check if user has folder in users/ folder. if not, create it
     check_user_folder(update.message.from_user.id)
-    return 
+    return
+
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
 
     check_user_folder(update.message.from_user.id)
 
@@ -110,33 +116,30 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
 
-        response = None # Initialize the 'response' variable here
-    
+        response = None  # Initialize the 'response' variable here
+
         # get sender username
         username = update.message.from_user.username
-        #get sender full name
+        # get sender full name
         full_name = update.message.from_user.full_name
 
-        #if sender isn't in the approved users list, send a message and return
+        # if sender isn't in the approved users list, send a message and return
         if username not in config.approved_users:
-            response = await ai.secretary(update,update.message.text,context)
-           
+            response = await ai.secretary(update, update.message.text, context)
+
         else:
-            response = await ai.chat(update,update.message.text,get_settings("GPTversion"))
+            response = await ai.chat(update, update.message.text, get_settings("GPTversion"))
 
         await update.message.reply_text(response)
-        
-        
+
         # if the response is an array, send each element of the array as a message // si la respuesta es un array, enviar cada elemento del array como un mensaje
-        
+
         return
     except Exception as e:
         # print and send the formatted traceback // imprimir y enviar el traceback formateado
         traceback.print_exc()
         await update.message.reply_text(traceback.format_exc())
 
-    
-        
 
 # function that handles the voice notes // función principal que maneja las notas de voz
 async def handle_voice(update, context):
@@ -155,7 +158,7 @@ async def handle_voice(update, context):
     try:
 
         transcription = await ai.transcribe_audio(update)
-        response = None # Initialize the 'response' variable here
+        response = None  # Initialize the 'response' variable here
 
         # check if message has caption (es un audio de WhatsApp)
         if message.caption:
@@ -168,52 +171,55 @@ async def handle_voice(update, context):
 
                 csvm.store_to_csv(message=transcription)
                 # call the prompt function // llamar a la función prompt
-                response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username,update=update)
-                
+                response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username, update=update)
+
                 # call the clean_options function // llamar a la función clean_options
                 response_text, options = await clean.clean_options(response)
-                
+
                 # add the options to the current response options
                 for option in options:
                     current_response_options.append(option)
-            
+
                 # reply to the message with the summary and the 5 options // responder al mensaje con el resumen y las 5 opciones
                 await update.message.reply_text(response_text, reply_markup=InlineKeyboardMarkup(
                     [
                         [
-                            InlineKeyboardButton(text=options[0], callback_data="0")
+                            InlineKeyboardButton(
+                                text=options[0], callback_data="0")
                         ],
                         [
-                            InlineKeyboardButton(text=options[1], callback_data="1")
+                            InlineKeyboardButton(
+                                text=options[1], callback_data="1")
                         ],
                         [
-                            InlineKeyboardButton(text=options[2], callback_data="2")
+                            InlineKeyboardButton(
+                                text=options[2], callback_data="2")
                         ],
                         [
-                            InlineKeyboardButton(text=options[3], callback_data="3")
+                            InlineKeyboardButton(
+                                text=options[3], callback_data="3")
                         ]
                     ]
                 ))
-                return AWAIT_INSTRUCTIONS            
+                return AWAIT_INSTRUCTIONS
 
         # if the message has no caption (it's a voice note)
         else:
 
-            #if sender isn't jmcafferata
-            if username != config.my_username:
-                response = await ai.secretary(update,transcription,context)
-                
+            # if sender isn't jin the approved users list, send a message and return
+            if username not in config.approved_users:
+                response = await ai.secretary(update, transcription, context)
+
             else:
-                response = await ai.chat(update,transcription,get_settings("GPTversion"))
+                response = await ai.chat(update, transcription, get_settings("GPTversion"))
 
             await update.message.reply_text(response)
-        
+
     except Exception as e:
         # print and send the formatted traceback // imprimir y enviar el traceback formateado
         traceback.print_exc()
         await update.message.reply_text(traceback.format_exc())
-        
-        
+
     return ConversationHandler.END
 
 
@@ -234,7 +240,7 @@ async def handle_audio(update, context):
     try:
 
         transcription = await ai.transcribe_audio(update)
-        response = None # Initialize the 'response' variable here
+        response = None  # Initialize the 'response' variable here
 
         # check if message has caption (es un audio de WhatsApp)
         if message.caption:
@@ -247,52 +253,55 @@ async def handle_audio(update, context):
 
                 csvm.store_to_csv(message=transcription)
                 # call the prompt function // llamar a la función prompt
-                response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username,update=update)
-                
+                response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username, update=update)
+
                 # call the clean_options function // llamar a la función clean_options
                 response_text, options = await clean.clean_options(response)
-                
+
                 # add the options to the current response options
                 for option in options:
                     current_response_options.append(option)
-            
+
                 # reply to the message with the summary and the 5 options // responder al mensaje con el resumen y las 5 opciones
                 await update.message.reply_text(response_text, reply_markup=InlineKeyboardMarkup(
                     [
                         [
-                            InlineKeyboardButton(text=options[0], callback_data="0")
+                            InlineKeyboardButton(
+                                text=options[0], callback_data="0")
                         ],
                         [
-                            InlineKeyboardButton(text=options[1], callback_data="1")
+                            InlineKeyboardButton(
+                                text=options[1], callback_data="1")
                         ],
                         [
-                            InlineKeyboardButton(text=options[2], callback_data="2")
+                            InlineKeyboardButton(
+                                text=options[2], callback_data="2")
                         ],
                         [
-                            InlineKeyboardButton(text=options[3], callback_data="3")
+                            InlineKeyboardButton(
+                                text=options[3], callback_data="3")
                         ]
                     ]
                 ))
-                return AWAIT_INSTRUCTIONS            
+                return AWAIT_INSTRUCTIONS
 
         # if the message has no caption (it's a voice note)
         else:
 
-            #if sender isn't jmcafferata
+            # if sender isn't jmcafferata
             if username != config.my_username:
-                response = await ai.secretary(update,transcription,context)
-                
+                response = await ai.secretary(update, transcription, context)
+
             else:
-                response = await ai.chat(update,transcription,get_settings("GPTversion"))
+                response = await ai.chat(update, transcription, get_settings("GPTversion"))
 
             await update.message.reply_text(response)
-        
+
     except Exception as e:
         # print and send the formatted traceback // imprimir y enviar el traceback formateado
         traceback.print_exc()
         await update.message.reply_text(traceback.format_exc())
-        
-        
+
     return ConversationHandler.END
 
 
@@ -300,13 +309,15 @@ async def handle_audio(update, context):
 async def respond_audio(update, context):
     # call the transcribe_audio function // llamar a la función transcribe_audio
     transcription = await ai.transcribe_audio(update)
-    response = await ai.complete_prompt(reason="answer", message=transcription, username=update.message.from_user.username,update=update)
+    response = await ai.complete_prompt(reason="answer", message=transcription, username=update.message.from_user.username, update=update)
     await update.message.reply_text(response)
     return ConversationHandler.END
-   
+
 
 # Function to handle files
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    #get user id from callback query
+    uid = update.callback_query.from_user.id
 
     data = update.callback_query.data
     print("Data: "+data)
@@ -316,90 +327,188 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = await ai.complete_prompt("answer", current_response_options[int(data)], update.callback_query.from_user.username, update)
         # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
         await update.callback_query.message.reply_text(response)
-    
+
     if data == "vectorizar":
         try:
-            await ai.vectorize(update=update,context=context,uid=get_settings("uid"))
+            await ai.vectorize(update=update, context=context, uid=get_settings("uid"))
             await update.callback_query.message.reply_text("🎉 Vectorización completa!")
             await update.callback_query.message.reply_text("🙏Recordá mencionar el nombre del documento cuando quieras consultarlo")
         except Exception as e:
             # send traceback // enviar traceback
             traceback.print_exc()
             await update.callback_query.message.reply_text(traceback.format_exc())
-    
-    
+
+    if data == "train_si":
+        # append the pending_pcp_response from settings.json to the list pending_pcp_list in settings.json
+        last_pcp_response = get_settings("pending_pcp_response")
+        pending_pcp_list = get_settings("pending_pcp_list")
+        pending_pcp_list.append(last_pcp_response)
+        write_settings(key="pending_pcp_list", value=pending_pcp_list)
+        print("pending_pcp_list: "+str(pending_pcp_list))
+
+        # get the pending_pcp_message_id from settings.json
+        pending_pcp_message_id = get_settings("pending_pcp_message_id")
+
+        # generate a prompt completion pair
+        pcp_response = await ai.generate_prompt_completion_pair(uid)
+        pcp_response = pcp_response + "\n\n👍🏻"
+
+        # write the pcp_response to settings.json
+        write_settings(key="pending_pcp_response", value=pcp_response)
+
+        # edit the message using the pending_pcp_message_id with the new pcp_response
+        await context.bot.edit_message_text(chat_id=update.callback_query.message.chat_id, message_id=pending_pcp_message_id, text=pcp_response, reply_markup=InlineKeyboardMarkup(
+            [
+                InlineKeyboardButton(text='✅ Sí', callback_data="train_si"),
+                InlineKeyboardButton(text='❌ No', callback_data="train_no"),
+                InlineKeyboardButton(text='↩️ Deshacer', callback_data="train_undo")]
+        ))
+
+    if data == "train_no":
+        # generate a prompt completion pair
+        pcp_response = await ai.generate_prompt_completion_pair(uid)
+
+        # write the pcp_response to settings.json
+        write_settings(key="pending_pcp_response", value=pcp_response)
+
+        # edit the message using the pending_pcp_message_id with the new pcp_response
+        await context.bot.edit_message_text(chat_id=update.callback_query.message.chat_id, message_id=pending_pcp_message_id, text=pcp_response, reply_markup=InlineKeyboardMarkup(
+            [
+                InlineKeyboardButton(text='✅ Sí', callback_data="train_si"),
+                InlineKeyboardButton(text='❌ No', callback_data="train_no"),
+                InlineKeyboardButton(text='↩️ Deshacer', callback_data="train_undo")]
+        ))
+
+    if data == "train_undo":
+        # get the pending_pcp_list from settings.json
+        pending_pcp_list = get_settings("pending_pcp_list")
+
+        # get the last element from the pending_pcp_list
+        last_pcp_response = pending_pcp_list[-1]
+
+        # remove the last element from the pending_pcp_list
+        pending_pcp_list.pop()
+
+        # write the pending_pcp_list to settings.json
+        write_settings(key="pending_pcp_list", value=pending_pcp_list)
+
+        print("pending_pcp_list: "+str(pending_pcp_list))
+
+        # write the last_pcp_response to settings.json
+        write_settings(key="pending_pcp_response", value=last_pcp_response)
+
+        # edit the message using the pending_pcp_message_id with the new pcp_response
+        await context.bot.edit_message_text(chat_id=update.callback_query.message.chat_id, message_id=pending_pcp_message_id, text=last_pcp_response, reply_markup=InlineKeyboardMarkup(
+            [
+                InlineKeyboardButton(text='✅ Sí', callback_data="train_si"),
+                InlineKeyboardButton(text='❌ No', callback_data="train_no"),
+                InlineKeyboardButton(text='↩️ Deshacer', callback_data="train_undo")]
+        ))
+
     return ConversationHandler.END
-    
+
     # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
-    
+
 
 async def chat3(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    
+
     check_user_folder(update.message.from_user.id)
 
     # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
     try:
-        write_settings(key="GPTversion",value="3")
+        write_settings(key="GPTversion", value="3")
         await update.message.reply_text("Estás usando ChatGPT 3 (es medio tonto pero es rápido y barato 👍👌)")
-        
+
     except Exception as e:
         exception_traceback = traceback.format_exc()
-        print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n',exception_traceback)
+        print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n', exception_traceback)
+
 
 async def chat4(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    
+
     check_user_folder(update.message.from_user.id)
 
     # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
     try:
-        write_settings(key="GPTversion",value="4")
+        write_settings(key="GPTversion", value="4")
         await update.message.reply_text("Estás usando ChatGPT 4 (es un poco más caro, no te zarpes🥲)")
-        
+
     except Exception as e:
         exception_traceback = traceback.format_exc()
-        print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n',exception_traceback)
+        print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n', exception_traceback)
 
 # a function that handles the /vectorizar command. It returns a link that takes them to redquequen.com/vectorizar/user_id // una función que maneja el comando /vectorizar. Devuelve un enlace que los lleva a redquequen.com/vectorizar/user_id
+
+
 async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get the user id // obtener el id del usuario
     user_id = update.message.from_user.id
     # send a message with the link // enviar un mensaje con el enlace
-    #get flask_testing from settings.json
+    # get flask_testing from settings.json
 
     url = "Entrá a este link para subir un archivo:\n\n"
     if get_settings("flask_testing") == "True":
-        url +=config.test_server+"/"+config.bot_code+"/vectorizar/"+str(user_id)
+        url += config.test_server+"/" + \
+            config.bot_code+"/vectorizar/"+str(user_id)
     else:
         url += config.website+"/"+config.bot_code+"/vectorizar/"+str(user_id)
 
     url += "\n\nPor favor 🤲 chequeá que el documento tenga un nombre que lo identifique bien, por ejemplo: 'Resúmenes de la materia Arte Indoamericano'"
 
     await update.message.reply_text(url, reply_markup=InlineKeyboardMarkup(
-                        [
-                            [
-                                InlineKeyboardButton(text='Listo', callback_data="vectorizar")
-                            ]
-                        ]
-                    ))
-    
+        [
+            [
+                InlineKeyboardButton(
+                                    text='Listo', callback_data="vectorizar")
+            ]
+        ]
+    ))
+
+
+async def entrenar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # clean the pending_pcp_list
+    write_settings(key="pending_pcp_list", value=[])
+    # get prompt completion pair
+    pcp_response = await ai.generate_prompt_completion_pair(update.message.from_user.id)
+
+    # add the pcp_response to the settings.json file with the key "pending_pcp_response"
+    write_settings(key="pending_pcp_response", value=pcp_response)
+
+    print('pending pcp response\n', get_settings("pending_pcp_response"))
+    # send a message with the prompt completion pair and a keyboard with two options: sí y no
+    pcp_message = await update.message.reply_text(pcp_response, reply_markup=InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    text='✅ Sí', callback_data="train_si"),
+                InlineKeyboardButton(
+                    text='❌ No', callback_data="train_no"),
+                InlineKeyboardButton(
+                    text='↩️ Deshacer', callback_data="train_undo")
+            ]
+        ]
+    ))
+
+    # add the pcp_message_id to the settings.json file with the key "pending_pcp_message_id"
+    write_settings(key="pending_pcp_message_id", value=pcp_message.message_id)
+    print('message id\n', get_settings("pending_pcp_message_id"))
+
 
 async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get the user id // obtener el id del usuario
     user_id = update.message.from_user.id
     # send a message with the link // enviar un mensaje con el enlace
-    #get flask_testing from settings.json
+    # get flask_testing from settings.json
     if get_settings("flask_testing") == "True":
-        write_settings(key="flask_testing",value="False")
+        write_settings(key="flask_testing", value="False")
         await update.message.reply_text("flask_testing is now False")
     else:
-        write_settings(key="flask_testing",value="True")
+        write_settings(key="flask_testing", value="True")
         await update.message.reply_text("flask_testing is now True")
-
 
 
 # main function // función principal
 if __name__ == '__main__':
-
 
     current_response_options = []
 
@@ -408,43 +517,46 @@ if __name__ == '__main__':
     # create the bot // crear el bot
     application = Application.builder().token(config.telegram_api_key).build()
 
-
     # start handler
     start_handler = CommandHandler('start', start)
     application.add_handler(start_handler)
 
     # for when the bot receives a text message // para cuando el bot recibe un archivo de audio
-    text_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), handle_text)
+    text_handler = MessageHandler(
+        filters.TEXT & (~filters.COMMAND), handle_text)
     application.add_handler(text_handler)
-
 
     # for when the bot receives a voice note // para cuando el bot recibe una nota de voz
     # exclude conversation states // excluir estados de conversación
-    voice_handler = MessageHandler(filters.VOICE & (~filters.COMMAND), handle_voice)
+    voice_handler = MessageHandler(
+        filters.VOICE & (~filters.COMMAND), handle_voice)
     application.add_handler(voice_handler)
 
     # for when the bot receives a voice note // para cuando el bot recibe una nota de voz
     # exclude conversation states // excluir estados de conversación
-    audio_handler = MessageHandler(filters.AUDIO & (~filters.COMMAND), handle_audio)
+    audio_handler = MessageHandler(
+        filters.AUDIO & (~filters.COMMAND), handle_audio)
     application.add_handler(audio_handler)
 
-
-    #/chat3 command
+    # /chat3 command
     chat3_handler = CommandHandler('chat3', chat3)
     application.add_handler(chat3_handler)
 
-    #/chat4 command
+    # /chat4 command
     chat4_handler = CommandHandler('chat4', chat4)
     application.add_handler(chat4_handler)
 
-    #/vectorizar command
+    # /vectorizar command
     vectorizar_handler = CommandHandler('vectorizar', vectorizar)
     application.add_handler(vectorizar_handler)
-    
-    #/test command
+
+    # /test command
     flask_test_handler = CommandHandler('flask_test', flask_test)
     application.add_handler(flask_test_handler)
 
+    # /entrenar command
+    entrenar_handler = CommandHandler('entrenar', entrenar)
+    application.add_handler(entrenar_handler)
 
     # a callback query handler // un manejador de consulta de devolución de llamada
     callback_handler = CallbackQueryHandler(callback=callback)

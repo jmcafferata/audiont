@@ -28,9 +28,10 @@ import ast
 from telegram.error import BadRequest
 from telegram.error import RetryAfter
 import tiktoken
-import PyPDF4
+import pdfplumber
 # import ast
 import shutil
+import random
 
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
@@ -169,8 +170,87 @@ def get_json_top_entries(query, database_name, top_n=5):
     
     return related_data
 
+################### GENERATE PROMPT COMPLETION PAIRS ############################
+
+async def generate_prompt_completion_pair(user_id):
+    print(user_id)
+    # get the files from the user flder. if folder doesn't exist, create it
+    if not os.path.exists('users/'+str(user_id)+'/training_data/'):
+        os.makedirs('users/'+str(user_id)+'/training_data/')
+    files = os.listdir('users/'+str(user_id)+'/training_data/')
+    print('files: ', files)
+    # pick a random file 
+    random_file = random.choice(files)
+
+    info_for_pcp = ''
+
+    # check if it's a json
+    if random_file.endswith('.json'):
+        # initialize the pcp data
+        # get a random object in the json
+        with open('users/'+str(user_id)+'/vectorized/'+random_file, 'r', encoding='utf-8') as f:
+            data = f.read()
+        # convert the json string to a list of dictionaries
+        data = json.loads(data)
+        # get a random object in the json
+        obj = random.choice(data)
+
+        # get the text_chunk, the metadata and the filename
+        text_chunk = obj['text_chunk']
+        metadata = obj['metadata']
+        filename = obj['filename']
+        # add the text_chunk, the metadata and the filename to the pcp data
+        info_for_pcp += text_chunk + ' - ' + metadata + ' - ' + filename + '\n\n'
 
 
+    elif random_file.endswith('.txt'):
+        #get random 400 character chunk
+        with open('users/'+str(user_id)+'/training_data/'+random_file, 'r', encoding='utf-8') as f:
+            data = f.read()
+        # put the cursor at a random position
+        random_position = random.randint(0, len(data)-400)
+        f.seek(random_position)
+        # read 400 characters
+        text_chunk = f.read(400)
+        # add the text_chunk to the pcp data
+        info_for_pcp += text_chunk + '\n\n'
+
+    elif random_file.endswith('.csv'):
+        # check if there's a | delimiter in the header
+        with open('users/'+str(user_id)+'/training_data/'+random_file, 'r', encoding='utf-8') as f:
+            # read first line
+            first_line = f.readline()
+            # check if there's a | delimiter
+            if '|' in first_line:
+                # read the csv with the | delimiter
+                df = pd.read_csv('users/'+str(user_id)+'/training_data/'+random_file, sep='|')
+            else:
+                # read the csv with the , delimiter
+                df = pd.read_csv('users/'+str(user_id)+'/training_data/'+random_file)
+        # get a random row in the csv
+        obj = df.sample()
+        # remove embedding column if there is one
+        if 'embedding' in obj.columns:
+            obj = obj.drop(columns=['embedding'])
+        # add the row to the pcp data
+        info_for_pcp += obj.to_string(index=False) + '\n\n'
+
+    print('info_for_pcp: ', info_for_pcp)
+        
+    pcp_response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role":"system","content":"""{"prompt":"Summary: Mi nombre es Juan Manuel Cafferata. Nací el 28/09/1994. Soy un entusiasta y apasionado individuo con múltiples talentos e intereses. tengo conocimientos en Blender, Python, Adobe, Unity, realidad virtual, inteligencia artificial, computación gráfica, cine, diseño gráfico, producción de videos, ciencia, canto, trompeta, piano y animación. mi habilidad para ofrecer apoyo y asesoramiento a sus amigos y colegas en estos diversos temas es muy apreciada.\n\nSpecific information: """+info_for_pcp+"""\n\n###\n\nUser: <question to J.M regarding the specific information>\nJ.M.: <response, in his tone of voice and language>\nUser: <message2>\J.M.:",
+        "completion": <response2, in his tone of voice and language>
+        """}],
+    )
+
+    # send the response to the user
+    return pcp_response.choices[0].message.content
+
+
+
+    
+    
 ################### v3 ############################
 
 def get_top_entries(db, query, top_n=15):
@@ -387,7 +467,6 @@ async def secretary(update,message,context):
     
 ################### VECTORIZE ############################
 
-import pdfplumber
 
 def read_files(input_folder):
     content = []

@@ -239,8 +239,8 @@ async def generate_prompt_completion_pair(user_id):
         
     pcp_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[{"role":"system","content":"""{"prompt":"Summary: Mi nombre es Juan Manuel Cafferata. Nací el 28/09/1994. Soy un entusiasta y apasionado individuo con múltiples talentos e intereses. tengo conocimientos en Blender, Python, Adobe, Unity, realidad virtual, inteligencia artificial, computación gráfica, cine, diseño gráfico, producción de videos, ciencia, canto, trompeta, piano y animación. mi habilidad para ofrecer apoyo y asesoramiento a sus amigos y colegas en estos diversos temas es muy apreciada.\n\nSpecific information: """+info_for_pcp+"""\n\n###\n\nUser: <question to J.M regarding the specific information>\nJ.M.: <response, in his tone of voice and language>\nUser: <message2>\J.M.:",
-        "completion": <response2, in his tone of voice and language>
+        messages=[{"role":"system","content":"""{"prompt":"Summary: Mi nombre es Roy Cortina. Soy un legislador porteño del Partido Socialista de la Ciudad de Buenos Aires y formo parte de la Alianza Juntos por el Cambio, liderada por Horacio Rodríguez Larreta, cuyo proyecto de presidencia para 2023 apoyo.\n\nSpecific information: """+info_for_pcp+"""\n\n###\n\nUsuario: <pregunta1 media o difícil para Roy Cortina acerca de la información específica>\nRoy Cortina: <respuesta1, usando su lenguaje>\nUsuario: <pregunta2>\nRoy Cortina:"},
+        {"completion": <respuesta2, en su lenguaje>}
         """}],
     )
 
@@ -487,7 +487,7 @@ def read_files(input_folder):
 
                 if file.endswith('.txt'):
                     with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
-                        content.append((f.read(), file, None,''))  # Add 'None' for the page number
+                        content.append((f.read(), file, 0,''))  # Add 'None' for the page number
                 elif file.endswith('.pdf'):
                     with pdfplumber.open(os.path.join(root, file)) as pdf:
                         for page_num in range(len(pdf.pages)):

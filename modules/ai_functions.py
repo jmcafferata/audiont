@@ -56,6 +56,21 @@ def read_data_from_csv(key: str, filename: str) -> dict:
     # return None if the key is not found // devolver None si la clave no se encuentra
     return None
 
+# function that reads settings.json (a key given by the user) and returns the value
+def get_settings(key):
+    with open('settings.json') as json_file:
+        data = json.load(json_file)
+        return data[key]
+
+# function that writes to settings.json (a key given by the user) and returns the value
+
+
+def write_settings(key, value):
+    with open('settings.json') as json_file:
+        data = json.load(json_file)
+        data[key] = value
+        with open('settings.json', 'w') as outfile:
+            json.dump(data, outfile)
 
 
 def check_and_compute_cosine_similarity(x, message_vector):
@@ -302,66 +317,74 @@ async def chat(update,message,model):
         with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'w', encoding='utf-8') as f: 
             f.write('date|role|content\n')
 
+    # if users/global folder doesn't exist, create it
+    if not os.path.exists('users/global'):
+        os.makedirs('users/global')
+
+
     prompt.append({"role": "system", "content": config.personalidad+config.vocabulario})
 
     # add chat history to prompt
     chat_df = pd.read_csv('users/'+str(update.message.from_user.id)+'/chat.csv', sep='|', encoding='utf-8', escapechar='\\')
     chat_df = chat_df.tail(6)
     for index, row in chat_df.iterrows():
-        prompt.append({"role": row['role'], "content": row['date']+" "+row['content']})
+        prompt.append({"role": row['role'], "content": row['content']})
     try:
-        # get a list of the files in vectorized folder
-        files = os.listdir('users/'+str(update.message.from_user.id)+'/vectorized')
-        print('files: ', files)
-        docusearch_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            temperature=0.2,
-            messages=[
-                {"role": "system", "content": """Prompt: As a powerful language model, your task is to help users by providing relevant JSON documents based on their search query. A user will provide you with a search query and a list of available JSON documents. You must respond with an array of the files that are even remotely relevant to the query.
+        if get_settings("docusearch") == "True":
+            # get a list of the files in vectorized folder
+            #files = os.listdir('users/'+str(update.message.from_user.id)+'/vectorized')
+            files = os.listdir('users/global/vectorized')
+            print('files: ', files)
+            docusearch_response = openai.ChatCompletion.create(
+                model="gpt-4",
+                temperature=0.2,
+                messages=[
+                    {"role": "system", "content": """Prompt: As a powerful language model, your task is to help users by providing relevant JSON documents based on their search query. A user will provide you with a search query and a list of available JSON documents. You must respond with an array of the files that are even remotely relevant to the query.
 
-User: Search query: "Sustainable energy sources" 
-Available documents: ["Introduction to Renewable Energy.pdf.json", "Fossil Fuels and Climate Change.pdf.json", "Solar and Wind Power.pdf.json", "Nuclear Energy Pros and Cons.pdf.json", "Sustainable Energy Solutions.pdf.json", "The Future of Oil.pdf.json"]
+    User: Search query: "Sustainable energy sources" 
+    Available documents: ["Introduction to Renewable Energy.pdf.json", "Fossil Fuels and Climate Change.pdf.json", "Solar and Wind Power.pdf.json", "Nuclear Energy Pros and Cons.pdf.json", "Sustainable Energy Solutions.pdf.json", "The Future of Oil.pdf.json"]
 
-LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.json", "Sustainable Energy Solutions.pdf.json"]"""},
-                {"role": "user", "content": "Search query: " + message + "\nAvailable documents: " + str(files) + "\n\nLLM: ['"}
+    LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.json", "Sustainable Energy Solutions.pdf.json"]"""},
+                    {"role": "user", "content": "Search query: " + message + "\nAvailable documents: " + str(files) + "\n\nLLM: ['"}
 
-            ]
-        )
-        
-        print("################ docusearch_response ############", docusearch_response.choices[0].message.content)
-        # add the bracket so it's an array
-        docusearch_response = "['" + docusearch_response.choices[0].message.content
-
-        # get the text up until the first '] including the ']'
-        docusearch_response = docusearch_response[:docusearch_response.find(']')+1]
-
-        # get the list of files from the response
-        docusearch_file = ast.literal_eval(docusearch_response)
-
-        print("################ docusearch_file ############", docusearch_file)
-
-        final_similar_entries = ''
-        # for each file in the docusearch_response
-
-        # send a new message saying that i'm writing
-        new_message = await update.message.reply_text("Escribiendo...✍️✍️")
-        for file in docusearch_file:
+                ]
+            )
             
-            # edit message saying that the file is being searched
-            await new_message.edit_text("🔬 Buscando en " + file + "...")
-            # if file doesn't end with .json, add it
-            if not file.endswith('.json'):
-                file = file + '.json'
-            # if file is json
-            if file.endswith('.json'):
-                top_n = round(15/len(docusearch_file))
-                # get similar entries in the file
-                similar_entries = get_json_top_entries(message, 'users/'+str(update.message.from_user.id)+'/vectorized/'+file, top_n=top_n)
-                # truncate similar_entries to 5000/len(docusearch_file)
-                final_similar_entries += similar_entries[:round(5000/len(docusearch_file))]
+            print("################ docusearch_response ############", docusearch_response.choices[0].message.content)
+            # add the bracket so it's an array
+            docusearch_response = "['" + docusearch_response.choices[0].message.content
 
-        prompt.append({"role": "user", "content": final_similar_entries})
-        print("################ similar entries ############\n", final_similar_entries)
+            # get the text up until the first '] including the ']'
+            docusearch_response = docusearch_response[:docusearch_response.find(']')+1]
+
+            # get the list of files from the response
+            docusearch_file = ast.literal_eval(docusearch_response)
+
+            print("################ docusearch_file ############", docusearch_file)
+
+            final_similar_entries = ''
+            # for each file in the docusearch_response
+
+            # send a new message saying that i'm writing
+            new_message = await update.message.reply_text("Escribiendo...✍️✍️")
+            for file in docusearch_file:
+                
+                # edit message saying that the file is being searched
+                await new_message.edit_text("🔬 Buscando en " + file + "...")
+                # if file doesn't end with .json, add it
+                if not file.endswith('.json'):
+                    file = file + '.json'
+                # if file is json
+                if file.endswith('.json'):
+                    top_n = round(15/len(docusearch_file))
+                    # get similar entries in the file
+                    #similar_entries = get_json_top_entries(message, 'users/'+str(update.message.from_user.id)+'/vectorized/'+file, top_n=top_n)
+                    similar_entries = get_json_top_entries(message, 'users/global/vectorized/'+file, top_n=top_n)
+                    # truncate similar_entries to 5000/len(docusearch_file)
+                    final_similar_entries += similar_entries[:round(5000/len(docusearch_file))]
+
+            prompt.append({"role": "user", "content": final_similar_entries})
+            print("################ similar entries ############\n", final_similar_entries)
 
 
     except Exception as e:
@@ -370,14 +393,15 @@ LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.jso
 
 
     # add user message to prompt
-    prompt.append({"role": "user", "content": now.strftime("%d/%m/%Y %H:%M:%S")+" "+ message})
+    prompt.append({"role": "user", "content": message})
 
     if model == "3":
         model = "gpt-3.5-turbo"
     else:
         model = "gpt-4"
 
-
+    print("################# PROMPT #################")
+    print(prompt)
     gpt_response = openai.ChatCompletion.create(
         model=model,
         messages=prompt,
@@ -473,6 +497,7 @@ def read_files(input_folder):
     for root, dirs, files in os.walk(input_folder):
         counter = 0
         counter_end = len(files)
+        metadata = ''
         for file in files:
             # if file name doesnt start with metadata_
             if not file.startswith('metadata_'):
@@ -619,9 +644,9 @@ async def complete_prompt(reason, message,username,update):
         
     elif (reason == "answer"):
         # get related notes from db/notes.csv using pandas cosine similiaryty and get_top_entries
-        notes_file = 'db/notes.csv'
+        # notes_file = 'db/notes.csv'
         # get the top 3 entries
-        similar_entries = get_top_entries(notes_file,csvm.get_last_audio(), 7)
+        # similar_entries = get_top_entries(notes_file,csvm.get_last_audio(), 7)
 
 
         model = "gpt-4"
@@ -636,7 +661,7 @@ async def complete_prompt(reason, message,username,update):
         
         Escribir el mensaje de parte mía hacia el remitente, usando mis instrucciones como guía (pero no es necesario poner literalmente lo que dice la instrucción), mi personalidad y usando el mismo tono conversacional que mi interlocutor. Usar las siguientes notas mías para escribir igual a mí.
          
-          """ + similar_entries + """
+        
         Que sea muy natural, que parezca el cuerpo de un mensaje de chat."""})
 
         

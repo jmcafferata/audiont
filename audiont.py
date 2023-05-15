@@ -144,6 +144,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # function that handles the voice notes // función principal que maneja las notas de voz
 async def handle_voice(update, context):
 
+    print("handle_voice")
+
     check_user_folder(update.message.from_user.id)
 
     message = update.message
@@ -161,7 +163,7 @@ async def handle_voice(update, context):
         response = None  # Initialize the 'response' variable here
 
         # check if message has caption (es un audio de WhatsApp)
-        if message.caption:
+        if message.caption or message:
 
             await update.message.reply_text("El audio dice:")
             await update.message.reply_text(transcription)
@@ -226,6 +228,8 @@ async def handle_voice(update, context):
 # function that handles the voice notes // función principal que maneja las notas de voz
 async def handle_audio(update, context):
 
+    print("handle_audio")
+
     check_user_folder(update.message.from_user.id)
 
     message = update.message
@@ -243,7 +247,7 @@ async def handle_audio(update, context):
         response = None  # Initialize the 'response' variable here
 
         # check if message has caption (es un audio de WhatsApp)
-        if message.caption:
+        if message.caption or message:
 
             await update.message.reply_text("El audio dice:")
             await update.message.reply_text(transcription)
@@ -507,6 +511,18 @@ async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("flask_testing is now True")
 
 
+async def docusearch(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # get the user id // obtener el id del usuario
+    user_id = update.message.from_user.id
+    # send a message with the link // enviar un mensaje con el enlace
+    # get flask_testing from settings.json
+    if get_settings("docusearch") == "True":
+        write_settings(key="docusearch", value="False")
+        await update.message.reply_text("docusearch is now False")
+    else:
+        write_settings(key="docusearch", value="True")
+        await update.message.reply_text("docusearch is now True")
+
 # main function // función principal
 if __name__ == '__main__':
 
@@ -557,6 +573,10 @@ if __name__ == '__main__':
     # /entrenar command
     entrenar_handler = CommandHandler('entrenar', entrenar)
     application.add_handler(entrenar_handler)
+
+    # /docusearch command
+    docusearch_handler = CommandHandler('docusearch', docusearch)
+    application.add_handler(docusearch_handler)
 
     # a callback query handler // un manejador de consulta de devolución de llamada
     callback_handler = CallbackQueryHandler(callback=callback)

@@ -145,6 +145,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_voice(update, context):
 
     print("handle_voice")
+    print(str(update))
 
     check_user_folder(update.message.from_user.id)
 
@@ -162,11 +163,11 @@ async def handle_voice(update, context):
         transcription = await ai.transcribe_audio(update)
         response = None  # Initialize the 'response' variable here
 
+        await update.message.reply_text("El audio dice:")
+        await update.message.reply_text(transcription)
         # check if message has caption (es un audio de WhatsApp)
-        if message.caption or message:
+        if message.caption:
 
-            await update.message.reply_text("El audio dice:")
-            await update.message.reply_text(transcription)
 
             # check if username is  config.my_username
             if username == config.my_username:
@@ -229,6 +230,7 @@ async def handle_voice(update, context):
 async def handle_audio(update, context):
 
     print("handle_audio")
+    print(str(update))
 
     check_user_folder(update.message.from_user.id)
 
@@ -246,11 +248,11 @@ async def handle_audio(update, context):
         transcription = await ai.transcribe_audio(update)
         response = None  # Initialize the 'response' variable here
 
-        # check if message has caption (es un audio de WhatsApp)
-        if message.caption or message:
+        await update.message.reply_text("El audio dice:")
+        await update.message.reply_text(transcription)
 
-            await update.message.reply_text("El audio dice:")
-            await update.message.reply_text(transcription)
+        # check if message has caption (es un audio de WhatsApp)
+        if message.caption:
 
             # check if username is  config.my_username
             if username == config.my_username:

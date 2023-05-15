@@ -343,29 +343,41 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.callback_query.message.reply_text(traceback.format_exc())
 
     if data == "train_si":
-        # append the pending_pcp_response from settings.json to the list pending_pcp_list in settings.json
+
         last_pcp_response = get_settings("pending_pcp_response")
-        pending_pcp_list = get_settings("pending_pcp_list")
-        pending_pcp_list.append(last_pcp_response)
-        write_settings(key="pending_pcp_list", value=pending_pcp_list)
-        print("pending_pcp_list: "+str(pending_pcp_list))
+        split_data = last_pcp_response.split("Usuario:")[1].split("Roy Cortina:")
+        prompt = split_data[0].strip()
+        completion = "Roy Cortina:" + split_data[1].strip()
+
+        csvdata = [(prompt, completion)]
+
+        # if users/uid/pcp_pending.csv doesn't exist, create it
+        if not os.path.exists("users/"+str(uid)+"/pcp_pending.csv"):
+            with open("users/"+str(uid)+"/pcp_pending.csv", "w", newline='', encoding='utf-8') as csvfile:
+                # prompt,completion
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(["prompt", "completion"])
+
+        with open("users/"+str(uid)+"/pcp_pending.csv", "a", newline='', encoding='utf-8') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            for row in csvdata:
+                csvwriter.writerow(row)
 
         # get the pending_pcp_message_id from settings.json
         pending_pcp_message_id = get_settings("pending_pcp_message_id")
 
         # generate a prompt completion pair
         pcp_response = await ai.generate_prompt_completion_pair(uid)
-        pcp_response = pcp_response + "\n\n👍🏻"
 
         # write the pcp_response to settings.json
         write_settings(key="pending_pcp_response", value=pcp_response)
 
         # edit the message using the pending_pcp_message_id with the new pcp_response
         await context.bot.edit_message_text(chat_id=update.callback_query.message.chat_id, message_id=pending_pcp_message_id, text=pcp_response, reply_markup=InlineKeyboardMarkup(
-            [
+            [[
                 InlineKeyboardButton(text='✅ Sí', callback_data="train_si"),
                 InlineKeyboardButton(text='❌ No', callback_data="train_no"),
-                InlineKeyboardButton(text='↩️ Deshacer', callback_data="train_undo")]
+                InlineKeyboardButton(text='↩️ Deshacer', callback_data="train_undo")]]
         ))
 
     if data == "train_no":
@@ -375,38 +387,34 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # write the pcp_response to settings.json
         write_settings(key="pending_pcp_response", value=pcp_response)
 
+        # get the pending_pcp_message_id from settings.json
+        pending_pcp_message_id = get_settings("pending_pcp_message_id")
+
         # edit the message using the pending_pcp_message_id with the new pcp_response
         await context.bot.edit_message_text(chat_id=update.callback_query.message.chat_id, message_id=pending_pcp_message_id, text=pcp_response, reply_markup=InlineKeyboardMarkup(
-            [
+            [[
                 InlineKeyboardButton(text='✅ Sí', callback_data="train_si"),
                 InlineKeyboardButton(text='❌ No', callback_data="train_no"),
-                InlineKeyboardButton(text='↩️ Deshacer', callback_data="train_undo")]
+                InlineKeyboardButton(text='↩️ Deshacer', callback_data="train_undo")]]
         ))
 
     if data == "train_undo":
-        # get the pending_pcp_list from settings.json
-        pending_pcp_list = get_settings("pending_pcp_list")
+        # open users/uid/pcp_pending.csv
+        with open("users/"+str(uid)+"/pcp_pending.csv", "r",encoding="utf-8") as f:
+            # read the last line
+            last_line = f.readlines()[-1]
+            # delete the last line
+            lines = f.readlines()
+            lines.pop()
+        # write the lines back to users/uid/pcp_pending.csv
+        with open("users/"+str(uid)+"/pcp_pending.csv", "w",encoding="utf-8") as f:
+            f.writelines(lines)
 
-        # get the last element from the pending_pcp_list
-        last_pcp_response = pending_pcp_list[-1]
-
-        # remove the last element from the pending_pcp_list
-        pending_pcp_list.pop()
-
-        # write the pending_pcp_list to settings.json
-        write_settings(key="pending_pcp_list", value=pending_pcp_list)
-
-        print("pending_pcp_list: "+str(pending_pcp_list))
-
-        # write the last_pcp_response to settings.json
-        write_settings(key="pending_pcp_response", value=last_pcp_response)
 
         # edit the message using the pending_pcp_message_id with the new pcp_response
-        await context.bot.edit_message_text(chat_id=update.callback_query.message.chat_id, message_id=pending_pcp_message_id, text=last_pcp_response, reply_markup=InlineKeyboardMarkup(
-            [
-                InlineKeyboardButton(text='✅ Sí', callback_data="train_si"),
-                InlineKeyboardButton(text='❌ No', callback_data="train_no"),
-                InlineKeyboardButton(text='↩️ Deshacer', callback_data="train_undo")]
+        await context.bot.edit_message_text(chat_id=update.callback_query.message.chat_id, message_id=pending_pcp_message_id, text="¡Eliminé el anterior! 🫡", reply_markup=InlineKeyboardMarkup(
+            [[
+                InlineKeyboardButton(text='✅ Bien, sigamos', callback_data="train_no")]]
         ))
 
     return ConversationHandler.END

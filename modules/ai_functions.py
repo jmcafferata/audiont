@@ -254,8 +254,8 @@ async def generate_prompt_completion_pair(user_id):
         
     pcp_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[{"role":"system","content":"""{"prompt":"Summary: Mi nombre es Juan Manuel Cafferata. Nací el 28/09/1994. Soy un entusiasta y apasionado individuo con múltiples talentos e intereses. tengo conocimientos en Blender, Python, Adobe, Unity, realidad virtual, inteligencia artificial, computación gráfica, cine, diseño gráfico, producción de videos, ciencia, canto, trompeta, piano y animación. mi habilidad para ofrecer apoyo y asesoramiento a sus amigos y colegas en estos diversos temas es muy apreciada.\n\nSpecific information: """+info_for_pcp+"""\n\n###\n\nUser: <question to J.M regarding the specific information>\nJ.M.: <response, in his tone of voice and language>\nUser: <message2>\J.M.:",
-        "completion": <response2, in his tone of voice and language>
+        messages=[{"role":"system","content":"""{"prompt":"Summary: """+ config.summary+"""\n\nSpecific information: """+info_for_pcp+"""\n\n###\n\nUsuario: <pregunta1 acerca de la información específica>\n"""+config.my_name+""": <respuesta1, usando su lenguaje>\nUsuario: <pregunta2>\n"""+config.my_name+""":"},
+        {"completion": <respuesta2, en su lenguaje>}
         """}],
     )
 
@@ -512,7 +512,7 @@ def read_files(input_folder):
 
                 if file.endswith('.txt'):
                     with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
-                        content.append((f.read(), file, None,metadata))  # Add 'None' for the page number
+                        content.append((f.read(), file, 0,''))  # Add 'None' for the page number
                 elif file.endswith('.pdf'):
                     with pdfplumber.open(os.path.join(root, file)) as pdf:
                         for page_num in range(len(pdf.pages)):
@@ -520,6 +520,10 @@ def read_files(input_folder):
                             text = page.extract_text()
                             content.append((text, file, page_num,metadata))
                             print(content)
+                elif file.endswith('.html'):
+                    with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
+                        soup = BeautifulSoup(f, 'html.parser')
+                        content.append((soup.get_text(), file, None,''))
                 counter += 1
     print(len(content))
     return content
@@ -555,7 +559,7 @@ def vectorize_chunks(text_chunks, metadata,file):
 
     for chunk in text_chunks:
         print('Progress: {}/{}'.format(counter, counter_end))
-        embedding = get_embedding(chunk,"text-embedding-ada-002")
+        embedding = get_embedding(file+"\n"+chunk,"text-embedding-ada-002")
         vectorized_data.append({
             'filename': file,
             'metadata': metadata,
@@ -585,8 +589,10 @@ async def vectorize(update, context, uid):
 
     #delete duplicates from files_to_vectorize
     files_to_vectorize = list(dict.fromkeys(files_to_vectorize))
+    #truncate files_to_vectorize to 100
+    files_to_vectorize = str(files_to_vectorize)[:100]
         
-    await update.callback_query.message.reply_text("💿 Vectorizando "+str(files_to_vectorize)+"...")
+    await update.callback_query.message.reply_text("💿 Vectorizando "+files_to_vectorize+"...")
 
     for text, file, page_num,metadata in text_data:
         vectorized_data = []

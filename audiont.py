@@ -533,6 +533,19 @@ async def docusearch(update: Update, context: ContextTypes.DEFAULT_TYPE):
         write_settings(key="docusearch", value="True")
         await update.message.reply_text("docusearch is now True")
 
+async def access_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # get the user id // obtener el id del usuario
+    user_id = update.message.from_user.id
+    # send a message with the link // enviar un mensaje con el enlace
+    # get flask_testing from settings.json
+    if get_settings("access_level") == "global":
+        write_settings(key="access_level", value="user")
+        await update.message.reply_text("Sólo busco en textos tuyos.")
+    else:
+        write_settings(key="access_level", value="global")
+        await update.message.reply_text("Sólo busco en textos globales.")
+
+
 # main function // función principal
 if __name__ == '__main__':
 
@@ -587,6 +600,10 @@ if __name__ == '__main__':
     # /docusearch command
     docusearch_handler = CommandHandler('docusearch', docusearch)
     application.add_handler(docusearch_handler)
+
+    # /docusearch command
+    access_level_handler = CommandHandler('access_level', access_level)
+    application.add_handler(access_level_handler)
 
     # a callback query handler // un manejador de consulta de devolución de llamada
     callback_handler = CallbackQueryHandler(callback=callback)

@@ -379,8 +379,12 @@ async def chat(update,message,model):
                     top_n = round(15/len(docusearch_file))
                     # get similar entries in the file
                     #similar_entries = get_json_top_entries(message, 'users/'+str(update.message.from_user.id)+'/vectorized/'+file, top_n=top_n)
-                    similar_entries = get_json_top_entries(message, 'users/global/vectorized/'+file, top_n=top_n)
-                    # truncate similar_entries to 5000/len(docusearch_file)
+                    access_level = get_settings("access_level")
+                    if access_level == "global":
+                        similar_entries = get_json_top_entries(message, 'users/global/vectorized/'+file, top_n=top_n)
+                    else:
+                        similar_entries = get_json_top_entries(message, 'users/'+str(update.message.from_user.id)+'/vectorized/'+file, top_n=top_n)
+                    # truncate si   milar_entries to 5000/len(docusearch_file)
                     final_similar_entries += similar_entries[:round(5000/len(docusearch_file))]
 
             prompt.append({"role": "user", "content": final_similar_entries})

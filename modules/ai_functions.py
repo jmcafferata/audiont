@@ -333,7 +333,11 @@ async def chat(update,message,model):
         if get_settings("docusearch") == "True":
             # get a list of the files in vectorized folder
             #files = os.listdir('users/'+str(update.message.from_user.id)+'/vectorized')
-            files = os.listdir('users/global/vectorized')
+            access_level = get_settings("access_level")
+            if access_level == "global":
+                files = os.listdir('users/global/vectorized')
+            else:
+                files = os.listdir('users/'+str(update.message.from_user.id)+'/vectorized')
             print('files: ', files)
             docusearch_response = openai.ChatCompletion.create(
                 model="gpt-4",

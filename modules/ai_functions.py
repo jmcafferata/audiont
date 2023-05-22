@@ -362,6 +362,7 @@ async def chat(update,message,model):
             docusearch_response = docusearch_response[:docusearch_response.find(']')+1]
 
             # get the list of files from the response
+            print("################ docusearch_response PARSED ############", docusearch_response)
             docusearch_file = ast.literal_eval(docusearch_response)
 
             print("################ docusearch_file ############", docusearch_file)

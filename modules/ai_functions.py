@@ -32,6 +32,7 @@ import pdfplumber
 # import ast
 import shutil
 import random
+from modules.settings_system import get_settings
 
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
@@ -55,22 +56,6 @@ def read_data_from_csv(key: str, filename: str) -> dict:
                 return row[1]
     # return None if the key is not found // devolver None si la clave no se encuentra
     return None
-
-# function that reads settings.json (a key given by the user) and returns the value
-def get_settings(key):
-    with open('settings.json') as json_file:
-        data = json.load(json_file)
-        return data[key]
-
-# function that writes to settings.json (a key given by the user) and returns the value
-
-
-def write_settings(key, value):
-    with open('settings.json') as json_file:
-        data = json.load(json_file)
-        data[key] = value
-        with open('settings.json', 'w') as outfile:
-            json.dump(data, outfile)
 
 
 def check_and_compute_cosine_similarity(x, message_vector):
@@ -330,10 +315,13 @@ async def chat(update,message,model):
     for index, row in chat_df.iterrows():
         prompt.append({"role": row['role'], "content": row['content']})
     try:
-        if get_settings("docusearch") == "True":
+
+        #### DOCUSEARCH ####
+
+        if get_settings("docusearch", update.message.from_user.id) == "True":
             # get a list of the files in vectorized folder
             #files = os.listdir('users/'+str(update.message.from_user.id)+'/vectorized')
-            access_level = get_settings("access_level")
+            access_level = get_settings("access_level", update.message.from_user.id)
             if access_level == "global":
                 files = os.listdir('users/global/vectorized')
             else:
@@ -345,10 +333,10 @@ async def chat(update,message,model):
                 messages=[
                     {"role": "system", "content": """Prompt: As a powerful language model, your task is to help users by providing relevant JSON documents based on their search query. A user will provide you with a search query and a list of available JSON documents. You must respond with an array of the files that are even remotely relevant to the query.
 
-    User: Search query: "Sustainable energy sources" 
-    Available documents: ["Introduction to Renewable Energy.pdf.json", "Fossil Fuels and Climate Change.pdf.json", "Solar and Wind Power.pdf.json", "Nuclear Energy Pros and Cons.pdf.json", "Sustainable Energy Solutions.pdf.json", "The Future of Oil.pdf.json"]
+                    User: Search query: "Sustainable energy sources" 
+                    Available documents: ["Introduction to Renewable Energy.pdf.json", "Fossil Fuels and Climate Change.pdf.json", "Solar and Wind Power.pdf.json", "Nuclear Energy Pros and Cons.pdf.json", "Sustainable Energy Solutions.pdf.json", "The Future of Oil.pdf.json"]
 
-    LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.json", "Sustainable Energy Solutions.pdf.json"]"""},
+                    LLM: ["Introduction to Renewable Energy.pdf.json", "Solar and Wind Power.pdf.json", "Sustainable Energy Solutions.pdf.json"]"""},
                     {"role": "user", "content": "Search query: " + message + "\nAvailable documents: " + str(files) + "\n\nLLM: ['"}
 
                 ]
@@ -360,6 +348,8 @@ async def chat(update,message,model):
 
             # get the text up until the first '] including the ']'
             docusearch_response = docusearch_response[:docusearch_response.find(']')+1]
+
+            #TODO: remove brackets from the files
 
             # get the list of files from the response
             print("################ docusearch_response PARSED ############", docusearch_response)
@@ -384,7 +374,7 @@ async def chat(update,message,model):
                     top_n = round(15/len(docusearch_file))
                     # get similar entries in the file
                     #similar_entries = get_json_top_entries(message, 'users/'+str(update.message.from_user.id)+'/vectorized/'+file, top_n=top_n)
-                    access_level = get_settings("access_level")
+                    access_level = get_settings("access_level", update.message.from_user.id)
                     if access_level == "global":
                         similar_entries = get_json_top_entries(message, 'users/global/vectorized/'+file, top_n=top_n)
                     else:
@@ -394,8 +384,36 @@ async def chat(update,message,model):
 
             prompt.append({"role": "user", "content": final_similar_entries})
             print("################ similar entries ############\n", final_similar_entries)
+            pass
 
+        ### SCRAPEAR ###
+        if get_settings("scrapear", update.message.from_user.id) == "True":
+            # find all the links in the message
+            links = re.findall(r'(https?://[^\s]+)', message)
+            print("################ links ############", links)
+            # Initialize an empty string to hold all the text
+            text_collection = ''    
+            # for each link
+            for link in links:
+                 # Get the HTML of the page
+                response = requests.get(link)
 
+                # Parse the HTML with BeautifulSoup
+                soup = BeautifulSoup(response.text, 'html.parser')
+
+                # Find all paragraph tags
+                paragraphs = soup.find_all('p')
+
+                # For each paragraph, print the text and add it to text_collection
+                for p in paragraphs:
+                    text = p.get_text()
+                    print(text)
+                    text_collection += text + '\n'  # Add a newline between paragraphs
+
+            # add the text to the prompt
+            prompt.append({"role": "user", "content": text_collection})
+
+        
     except Exception as e:
         print("################ ERROR IN DOCUMENT SEARCH ############", e)
     

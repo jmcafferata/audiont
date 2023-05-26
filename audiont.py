@@ -59,34 +59,9 @@ from telegram.constants import ParseMode
 from flask import Flask, request, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 import os
+from modules.settings_system import check_user_folder, get_settings, write_settings
 
 
-# function that reads settings.json (a key given by the user) and returns the value
-def get_settings(key):
-    with open('settings.json') as json_file:
-        data = json.load(json_file)
-        return data[key]
-
-# function that writes to settings.json (a key given by the user) and returns the value
-
-
-def write_settings(key, value):
-    with open('settings.json') as json_file:
-        data = json.load(json_file)
-        data[key] = value
-        with open('settings.json', 'w') as outfile:
-            json.dump(data, outfile)
-
-# function to check if user has folder in users/ folder. if not, create it
-
-
-def check_user_folder(user_id):
-    user_folder = Path("users/"+str(user_id))
-    if not user_folder.exists():
-        user_folder.mkdir(parents=True, exist_ok=True)
-        return False
-    else:
-        return True
 
 
 # CONTANTS // CONSTANTES
@@ -98,10 +73,10 @@ AWAIT_INSTRUCTIONS = range(1)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    write_settings("uid", str(update.message.from_user.id))
+    write_settings("uid", str(update.message.from_user.id),update.message.from_user.id)
     # send a message // enviar un mensaje
     await update.message.reply_text(
-        config.start_message + "\n\nTu user ID es: " + get_settings("uid")
+        config.start_message + "\n\nTu user ID es: " + get_settings("uid",update.message.from_user.id)
     )
     # check if user has folder in users/ folder. if not, create it
     check_user_folder(update.message.from_user.id)
@@ -128,7 +103,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response = await ai.secretary(update, update.message.text, context)
 
         else:
-            response = await ai.chat(update, update.message.text, get_settings("GPTversion"))
+            response = await ai.chat(update, update.message.text, get_settings("GPTversion",update.message.from_user.id))
 
         await update.message.reply_text(response)
 
@@ -214,7 +189,7 @@ async def handle_voice(update, context):
                 response = await ai.secretary(update, transcription, context)
 
             else:
-                response = await ai.chat(update, transcription, get_settings("GPTversion"))
+                response = await ai.chat(update, transcription, get_settings("GPTversion",update.message.from_user.id))
 
             await update.message.reply_text(response)
 
@@ -336,7 +311,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == "vectorizar":
         try:
-            await ai.vectorize(update=update, context=context, uid=get_settings("uid"))
+            await ai.vectorize(update=update, context=context, uid=get_settings("uid",update.callback_query.from_user.id))
             await update.callback_query.message.reply_text("🎉 Vectorización completa!")
             await update.callback_query.message.reply_text("🙏Recordá mencionar el nombre del documento cuando quieras consultarlo")
         except Exception as e:
@@ -346,7 +321,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == "train_si":
 
-        last_pcp_response = get_settings("pending_pcp_response")
+        last_pcp_response = get_settings("pending_pcp_response", uid)
         split_data = last_pcp_response.split("Usuario:")[1].split("Roy Cortina:")
         prompt = split_data[0].strip()
         completion = "Roy Cortina:" + split_data[1].strip()
@@ -366,13 +341,13 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 csvwriter.writerow(row)
 
         # get the pending_pcp_message_id from settings.json
-        pending_pcp_message_id = get_settings("pending_pcp_message_id")
+        pending_pcp_message_id = get_settings("pending_pcp_message_id", uid)
 
         # generate a prompt completion pair
         pcp_response = await ai.generate_prompt_completion_pair(uid)
 
         # write the pcp_response to settings.json
-        write_settings(key="pending_pcp_response", value=pcp_response)
+        write_settings(key="pending_pcp_response", value=pcp_response, uid=uid)
 
         # edit the message using the pending_pcp_message_id with the new pcp_response
         await context.bot.edit_message_text(chat_id=update.callback_query.message.chat_id, message_id=pending_pcp_message_id, text=pcp_response, reply_markup=InlineKeyboardMarkup(
@@ -387,10 +362,10 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pcp_response = await ai.generate_prompt_completion_pair(uid)
 
         # write the pcp_response to settings.json
-        write_settings(key="pending_pcp_response", value=pcp_response)
+        write_settings(key="pending_pcp_response", value=pcp_response, uid=uid)
 
         # get the pending_pcp_message_id from settings.json
-        pending_pcp_message_id = get_settings("pending_pcp_message_id")
+        pending_pcp_message_id = get_settings("pending_pcp_message_id", uid)
 
         # edit the message using the pending_pcp_message_id with the new pcp_response
         await context.bot.edit_message_text(chat_id=update.callback_query.message.chat_id, message_id=pending_pcp_message_id, text=pcp_response, reply_markup=InlineKeyboardMarkup(
@@ -430,7 +405,7 @@ async def chat3(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
     try:
-        write_settings(key="GPTversion", value="3")
+        write_settings(key="GPTversion", value="3", uid=update.message.from_user.id)
         await update.message.reply_text("Estás usando ChatGPT 3 (es medio tonto pero es rápido y barato 👍👌)")
 
     except Exception as e:
@@ -444,7 +419,7 @@ async def chat4(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
     try:
-        write_settings(key="GPTversion", value="4")
+        write_settings(key="GPTversion", value="4", uid=update.message.from_user.id)
         await update.message.reply_text("Estás usando ChatGPT 4 (es un poco más caro, no te zarpes🥲)")
 
     except Exception as e:
@@ -461,7 +436,7 @@ async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get flask_testing from settings.json
 
     url = "Entrá a este link para subir un archivo:\n\n"
-    if get_settings("flask_testing") == "True":
+    if get_settings("flask_testing",update.message.from_user.id) == "True":
         url += config.test_server+"/" + \
             config.bot_code+"/vectorizar/"+str(user_id)
     else:
@@ -481,14 +456,14 @@ async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def entrenar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # clean the pending_pcp_list
-    write_settings(key="pending_pcp_list", value=[])
+    write_settings(key="pending_pcp_list", value=[], uid=update.message.from_user.id)
     # get prompt completion pair
     pcp_response = await ai.generate_prompt_completion_pair(update.message.from_user.id)
 
     # add the pcp_response to the settings.json file with the key "pending_pcp_response"
-    write_settings(key="pending_pcp_response", value=pcp_response)
+    write_settings(key="pending_pcp_response", value=pcp_response, uid=update.message.from_user.id)
 
-    print('pending pcp response\n', get_settings("pending_pcp_response"))
+    print('pending pcp response\n', get_settings("pending_pcp_response", update.message.from_user.id))
     # send a message with the prompt completion pair and a keyboard with two options: sí y no
     pcp_message = await update.message.reply_text(pcp_response, reply_markup=InlineKeyboardMarkup(
         [
@@ -504,8 +479,8 @@ async def entrenar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ))
 
     # add the pcp_message_id to the settings.json file with the key "pending_pcp_message_id"
-    write_settings(key="pending_pcp_message_id", value=pcp_message.message_id)
-    print('message id\n', get_settings("pending_pcp_message_id"))
+    write_settings(key="pending_pcp_message_id", value=pcp_message.message_id, uid=update.message.from_user.id)
+    print('message id\n', get_settings("pending_pcp_message_id", update.message.from_user.id))
 
 
 async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -513,11 +488,11 @@ async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     # send a message with the link // enviar un mensaje con el enlace
     # get flask_testing from settings.json
-    if get_settings("flask_testing") == "True":
-        write_settings(key="flask_testing", value="False")
+    if get_settings("flask_testing",update.message.from_user.id) == "True":
+        write_settings(key="flask_testing", value="False", uid=update.message.from_user.id)
         await update.message.reply_text("flask_testing is now False")
     else:
-        write_settings(key="flask_testing", value="True")
+        write_settings(key="flask_testing", value="True", uid=update.message.from_user.id)
         await update.message.reply_text("flask_testing is now True")
 
 
@@ -525,25 +500,39 @@ async def docusearch(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get the user id // obtener el id del usuario
     user_id = update.message.from_user.id
     # send a message with the link // enviar un mensaje con el enlace
-    # get flask_testing from settings.json
-    if get_settings("docusearch") == "True":
-        write_settings(key="docusearch", value="False")
-        await update.message.reply_text("docusearch is now False")
+    # get docusearch from settings.json
+    if get_settings("docusearch",update.message.from_user.id) == "True":
+        write_settings(key="docusearch", value="False", uid=update.message.from_user.id)
+        await update.message.reply_text("No voy a buscar en documentos.")
     else:
-        write_settings(key="docusearch", value="True")
-        await update.message.reply_text("docusearch is now True")
+        write_settings(key="docusearch", value="True", uid=update.message.from_user.id)
+        # set scrapear to False
+        write_settings(key="scrapear", value="False", uid=update.message.from_user.id)
+        await update.message.reply_text("Voy a buscar en documentos.")
 
 async def access_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get the user id // obtener el id del usuario
     user_id = update.message.from_user.id
     # send a message with the link // enviar un mensaje con el enlace
-    # get flask_testing from settings.json
-    if get_settings("access_level") == "global":
-        write_settings(key="access_level", value="user")
+    # get settings from settings.json
+    if get_settings("access_level",update.message.from_user.id) == "global":
+        write_settings(key="access_level", value="user", uid=update.message.from_user.id)
         await update.message.reply_text("Sólo busco en textos tuyos.")
     else:
-        write_settings(key="access_level", value="global")
+        write_settings(key="access_level", value="global", uid=update.message.from_user.id)
         await update.message.reply_text("Sólo busco en textos globales.")
+
+async def scrapear(update: Update, context:ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    # get scrapear from settings.json
+    if get_settings("scrapear",update.message.from_user.id) == "True":
+        write_settings(key="scrapear", value="False", uid=update.message.from_user.id)
+        await update.message.reply_text("Ahora no voy a scrapear la web.")
+    else:
+        write_settings(key="scrapear", value="True", uid=update.message.from_user.id)
+        # set docusearch to false
+        write_settings(key="docusearch", value="False", uid=update.message.from_user.id)
+        await update.message.reply_text("Pasame links y armo una nota con eso.")
 
 
 # main function // función principal
@@ -601,9 +590,14 @@ if __name__ == '__main__':
     docusearch_handler = CommandHandler('docusearch', docusearch)
     application.add_handler(docusearch_handler)
 
-    # /docusearch command
+    # /access_level command
     access_level_handler = CommandHandler('access_level', access_level)
     application.add_handler(access_level_handler)
+
+    # /scrapear command
+    scrapear_handler = CommandHandler('scrapear', scrapear)
+    application.add_handler(scrapear_handler)
+
 
     # a callback query handler // un manejador de consulta de devolución de llamada
     callback_handler = CallbackQueryHandler(callback=callback)

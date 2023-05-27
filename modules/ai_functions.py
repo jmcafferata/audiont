@@ -391,6 +391,9 @@ async def chat(update,message,model):
             # find all the links in the message
             links = re.findall(r'(https?://[^\s]+)', message)
             print("################ links ############", links)
+            #if no links, return
+            if len(links) == 0:
+                return "No se encontraron links en tu mensaje. Por favor, incluí al menos un link en tu mensaje para que pueda scrapearlo."
             # Initialize an empty string to hold all the text
             text_collection = ''    
             # for each link
@@ -404,11 +407,23 @@ async def chat(update,message,model):
                 # Find all paragraph tags
                 paragraphs = soup.find_all('p')
 
+                # use tiktoken to count the number of tokens
+                enc = tiktoken.encoding_for_model("gpt-4")
+                token_count = 0
+                page_text = ''
+
                 # For each paragraph, print the text and add it to text_collection
                 for p in paragraphs:
                     text = p.get_text()
+                    page_text += text + '\n'  # Add a newline between paragraphs
                     print(text)
-                    text_collection += text + '\n'  # Add a newline between paragraphs
+                    token_count += len(enc.encode(text))
+                    print("################ token_count ############", token_count)
+                    if token_count > 3500/len(links):
+                        print("################ token_count > 3500/len(links) ############", token_count > 3500/len(links))
+                        break
+
+                text_collection += page_text
 
             # add the text to the prompt
             prompt.append({"role": "user", "content": text_collection})
@@ -474,47 +489,10 @@ async def secretary(update,message,context):
     
     #embed and store the message in db/messages.csv
     message_vector = get_embedding(message, 'text-embedding-ada-002')
-
-    #get top entries from db/notes.csv
-    related_notes = get_top_entries('db/notes.csv', message, 15)
-    #truncate the string to 2000 characters
-    related_notes = related_notes[:2000]
-    print("related_notes", related_notes)
-    prompt = []
-
-    prompt.append({"role": "system", "content": "Today is " + now.strftime("%d/%m/%Y %H:%M:%S")+ "\n"+"\nMantené tus respuestas a menos de 100 caracteres.\nAcá van algunas notas de "+config.my_name+" que pueden ayudar:\n"+related_notes+" \nMi nombre es "+full_name+" ("+username+")"})
-    #print all those values to check their type
-    prompt.append({"role": "user", "content": message})
-    gpt_response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=prompt
-    )
-    response_string = gpt_response.choices[0].message.content
-    print("response_string", response_string)
-
-    # get the text between '"response": "' and '"}' and store it on chat.csv
-    pattern = r'"response":\s?"(.*?)"(?:,|\s?})'
-
-
-    match = re.search(pattern, response_string)
-
-    if match:
-        new_response_string = match.group(1)
-        response_string = new_response_string
-    else:
-        print("No se encontró la respuesta.")
-
-    #check if the user has a chat.csv
-    if not os.path.exists('users/'+str(update.message.from_user.id)+'/chat.csv'):
-        #create chat.csv
-        with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'w', encoding='utf-8') as f:
-            f.write('date|role|content\n')
-
-    with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')
+    with open('db/messages.csv', 'a', encoding='utf-8') as f:
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message+'|'+message_vector+'\n')
     
-    print("################ CHAT response ############", response_string)
-    return response_string
+    return "¡Mensaje guardado!"
     
 ################### VECTORIZE ############################
 
@@ -676,12 +654,6 @@ async def complete_prompt(reason, message,username,update):
 
         
     elif (reason == "answer"):
-        # get related notes from db/notes.csv using pandas cosine similiaryty and get_top_entries
-        # notes_file = 'db/notes.csv'
-        # get the top 3 entries
-        # similar_entries = get_top_entries(notes_file,csvm.get_last_audio(), 7)
-
-
         model = "gpt-4"
         chat_messages.append({"role":"user","content":"""
         Me acaban de enviar un mensaje de voz. Dice lo siguiente:
@@ -692,13 +664,7 @@ async def complete_prompt(reason, message,username,update):
         
         """ + message + """
         
-        Escribir el mensaje de parte mía hacia el remitente, usando mis instrucciones como guía (pero no es necesario poner literalmente lo que dice la instrucción), mi personalidad y usando el mismo tono conversacional que mi interlocutor. Usar las siguientes notas mías para escribir igual a mí.
-         
-        
-        Que sea muy natural, que parezca el cuerpo de un mensaje de chat."""})
-
-        
- 
+        Escribir el mensaje de parte mía hacia el remitente, usando mis instrucciones como guía (pero no es necesario poner literalmente lo que dice la instrucción), mi personalidad y usando el mismo tono conversacional que mi interlocutor. Ofrecer la mayor cantidad de ayuda posible, y ser bien específico y claro, con lenguaje simple e informal argentino."""})
 
     print("############### FIN DE CONFIGURACIÓN DEL PROMPT ################")
     print("############### PROMPTING THE AI ################")

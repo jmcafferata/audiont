@@ -269,12 +269,10 @@ async def handle_audio(update, context):
         # if the message has no caption (it's a voice note)
         else:
 
-            # if sender isn't jmcafferata
-            if username != config.my_username:
-                response = await ai.secretary(update, transcription, context)
-
-            else:
+            if username == config.my_username:
                 response = await ai.chat(update, transcription, get_settings("GPTversion"))
+            else:
+                response = "🫡"
 
             await update.message.reply_text(response)
 
@@ -527,12 +525,12 @@ async def scrapear(update: Update, context:ContextTypes.DEFAULT_TYPE):
     # get scrapear from settings.json
     if get_settings("scrapear",update.message.from_user.id) == "True":
         write_settings(key="scrapear", value="False", uid=update.message.from_user.id)
-        await update.message.reply_text("Ahora no voy a scrapear la web.")
+        await update.message.reply_text("❌ Ahora no voy a scrapear la web.")
     else:
         write_settings(key="scrapear", value="True", uid=update.message.from_user.id)
         # set docusearch to false
         write_settings(key="docusearch", value="False", uid=update.message.from_user.id)
-        await update.message.reply_text("Pasame links y armo una nota con eso.")
+        await update.message.reply_text("✅ Pasame links y armo una nota con eso.")
 
 
 # main function // función principal

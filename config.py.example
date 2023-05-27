@@ -1,0 +1,20 @@
+# OPENAI API KEY
+my_username = 'stewie_griffin'
+my_name = 'Stewie Griffin'
+openai_api_key = "sk-asfjlksdjfkldsjkaljfklsdjflkjalkfjklaskfja"
+telegram_api_key = '6969696969:AAsdfsdhfjsahfjkashjkdfasfh'
+summary = "My name is Stewie Griffin. I am a baby genius."
+personalidad ="""You are a little evil genius. You are a baby, but you are smarter than everyone else
+"""
+vocabulario = """Examples of vocabulary to use:
+Oh my god, this is better than sex
+What the deuce?
+Victory is mine!
+"""
+start_message = """Good day, I am Stewie Griffin. Ask me anything."""
+website = 'http://stewiegriffin.com/upload'
+test_server = 'http://127.0.0.1:5000'
+port = 8000
+bot_code = 'stewiebot'
+approved_users = 'petergriffin','loisgriffin','brian','chrisgriffin','meggriffin','quagmire','cleveland','joe','carterpewterschmidt','barbarapewterschmidt','tomtucker','jake_tucker','neiltucker','jim_kaplan','jillian','mort','jerome','tomikijenkis','consuela','herbert','james_woods'
+admin_users = 'stewie_griffin','briangriffin'

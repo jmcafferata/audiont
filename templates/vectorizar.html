@@ -5,8 +5,108 @@
   <meta charset="UTF-8" />
   <title>Vectorizar | Audion't</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    body {
+  font-family: "Arial", sans-serif;
+  background-color: #1f1f1f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+form{
+  text-align: center;
+}
+
+#submit-button{
+  margin-top: 24px;
+  max-width: 56px;
+  align-self: center;
+}
+
+.file-input-wrapper {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  border-radius: 50%;
+  background-color: #4a4a4a;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.upload-icon {
+  display: block;
+  width: 100px;
+  height: 100px;
+  background-color: #4a4a4a;
+  border-radius: 50%;
+  position: relative;
+}
+
+.upload-icon::before,
+.upload-icon::after {
+  content: "";
+  position: absolute;
+  background-color: #ffffff;
+  transition: opacity 0.2s ease;
+}
+
+.upload-icon::before {
+  width: 40px;
+  height: 3px;
+  top: 50%;
+  left: calc(50% - 20px);
+  transform: translateY(-50%);
+  opacity: 0.5;
+}
+
+.upload-icon::after {
+  width: 3px;
+  height: 40px;
+  top: 50%;
+  left: calc(50% - 1.5px);
+  transform: translateY(-50%);
+  opacity: 0.5;
+}
+
+.file-input-wrapper:hover .upload-icon::before,
+.file-input-wrapper:hover .upload-icon::after {
+  opacity: 1;
+}
+
+input[type="file"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.text-input-div{
+  display: none;
+  flex-direction: column;
+}
+label{
+  margin-top: 24px;
+  color: white;
+}
+#file-info{
+  margin-top: 12px;
+  font-size: 18px;
+}
+  </style>
 </head>
 
 <body>

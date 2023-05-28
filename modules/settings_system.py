@@ -28,6 +28,8 @@ def check_settings(uid):
         "pending_pcp_message_id": 0,
         "pending_pcp_list": [],
         "scrapear": "False",
+        "personality": "Soy un chatbot argentino, buena onda, copado y loco!",
+        "vocabulary": "Vocabulario de palabras para usar: watafaaak, zarpado, ke loko, me muero, yasss, no me la contés bro!"
     }
 
     # If the file exists, check if any settings are missing.

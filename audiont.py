@@ -101,12 +101,12 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # if sender isn't in the approved users list, send a message and return
         if username not in config.approved_users:
             response = await ai.secretary(update, update.message.text, context)
+            await update.message.reply_text(response)
 
         else:
-            response = await ai.chat(update, update.message.text, get_settings("GPTversion",update.message.from_user.id))
 
-        await update.message.reply_text(response)
-
+            await ai.chat(update, update.message.text, get_settings("GPTversion",update.message.from_user.id))
+        
         # if the response is an array, send each element of the array as a message // si la respuesta es un array, enviar cada elemento del array como un mensaje
 
         return
@@ -419,7 +419,7 @@ async def chat3(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
     try:
-        write_settings(key="GPTversion", value="3", uid=update.message.from_user.id)
+        write_settings(key="GPTversion", value="gpt-3.5-turbo", uid=update.message.from_user.id)
         await update.message.reply_text("Estás usando ChatGPT 3 (es medio tonto pero es rápido y barato 👍👌)")
 
     except Exception as e:
@@ -433,7 +433,7 @@ async def chat4(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
     try:
-        write_settings(key="GPTversion", value="4", uid=update.message.from_user.id)
+        write_settings(key="GPTversion", value="gpt-4", uid=update.message.from_user.id)
         await update.message.reply_text("Estás usando ChatGPT 4 (es un poco más caro, no te zarpes🥲)")
 
     except Exception as e:

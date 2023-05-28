@@ -139,7 +139,23 @@ async def handle_voice(update, context):
         response = None  # Initialize the 'response' variable here
 
         await update.message.reply_text("El audio dice:")
-        await update.message.reply_text(transcription)
+
+        # check if transcription length is more than 4000 characters
+        if len(transcription) > 4000:
+            # separate the transcription in 4000 character chunks
+            transcription_chunks = [
+                transcription[i : i + 4000]
+                for i in range(0, len(transcription), 4000)
+
+            ]
+            # send each chunk as a message // enviar cada chunk como un mensaje
+            for chunk in transcription_chunks:
+                await update.message.reply_text(chunk)
+
+        else:
+            # send the transcription as a message // enviar la transcripción como un mensaje
+            await update.message.reply_text(transcription)
+            
         # check if message has caption (es un audio de WhatsApp)
         if message.caption:
 

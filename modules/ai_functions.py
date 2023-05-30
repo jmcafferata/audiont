@@ -48,7 +48,7 @@ async def get_response_cost(prompt,completion,model,update):
         await update.message.reply_text('Enviando $'+str(round((num_tokens_prompt*0.03+num_tokens_completion*0.06)/1000, 2))+' a OpenAI...')
         print('Enviando $'+str(round((num_tokens_prompt*0.03+num_tokens_completion*0.06)/1000, 2))+' a OpenAI...')
 
-def get_json_top_entries(query, database_name, top_n=5):
+async def get_json_top_entries(query, database_name, top_n=5,update=None):
    
     # read the output.json file
     with open(database_name, 'r', encoding='utf-8') as f:
@@ -82,8 +82,11 @@ def get_json_top_entries(query, database_name, top_n=5):
 
     for index, row in mensajes_sim[['metadata', 'text_chunk']].head(top_n).iterrows():
         print(str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n')
+        if update:
+            await update.message.reply_text('👓 Data relacionada...👇\n' + str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n')
         try:
             related_data += str(row['filename']) + ' - ' + str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n'
+
         except:
             related_data += str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n'
     
@@ -280,20 +283,15 @@ async def perform_action(intent, entities, message,update):
             # if file is json
             if file.endswith('.json'):
                 top_n = round(15/len(docusearch_file))
-                # get similar entries in the file
-                #similar_entries = get_json_top_entries(message, 'users/'+str(update.message.from_user.id)+'/vectorized/'+file, top_n=top_n)
-                access_level = get_settings("access_level", update.message.from_user.id)
-                if access_level == "global":
-                    similar_entries = get_json_top_entries(message, file, top_n=top_n)
-                else:
-                    similar_entries = get_json_top_entries(message, file, top_n=top_n)
-                # truncate si   milar_entries to 5000/len(docusearch_file)
+                similar_entries = await get_json_top_entries(message, file, top_n,update)
                 final_similar_entries += similar_entries[:round(5000/len(docusearch_file))]
 
         prompt_messages.append({"role": "user", "content": final_similar_entries})
         
         # append the message
         prompt_messages.append({"role": "user", "content": message})
+
+        await update.message.reply_text("Escribiendo una respuesta...✍️✍️")
 
         response = openai.ChatCompletion.create(
             model=model,

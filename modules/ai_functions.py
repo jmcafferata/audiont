@@ -123,9 +123,9 @@ def get_top_entries(db, query, top_n=15):
 
     return similar_entries
 
-async def understand_intent(update):
+async def understand_intent(update, message):
     # get the message from the user // obtener el mensaje del usuario
-    message = update.message.text
+    
     prompt = []
     # get global json documents from the users/global folder only if they are JSONs
     global_jsons = [f for f in os.listdir('users/global/vectorized') if f.endswith('.json')]
@@ -605,7 +605,7 @@ async def chat(update,message,model):
     print("################# ENTERING CHAT MODE #################")
 
     # check what the user wants
-    intent = await understand_intent(update)
+    intent = await understand_intent(update, message)
 
     # TODO: get the entities from the message
     entities = await extract_entities(update)

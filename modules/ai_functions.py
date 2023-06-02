@@ -707,7 +707,7 @@ def vectorize_chunks(text_chunks, metadata,file):
 
     for chunk in text_chunks:
         print('Progress: {}/{}'.format(counter, counter_end))
-        embedding = get_embedding(file+"\n"+chunk,"text-embedding-ada-002")
+        embedding = get_embedding(chunk, "text-embedding-ada-002")
         vectorized_data.append({
             'filename': file,
             'metadata': metadata,

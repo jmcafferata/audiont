@@ -273,18 +273,34 @@ async def perform_action(intent, entities, message,update):
 
         # send a new message saying that i'm writing
         new_message = await update.message.reply_text("Escribiendo...✍️✍️")
+
+        #extract the search query from the message
+        query_response = openai.ChatCompletion.create(
+            model="gpt-4",
+            temperature=0.2,
+            messages=[
+                {"role":"system","content":"Example input: 'buscar en henry george el concepto de impuesto único'.\nExample output: 'impuesto único'"},
+                {"role": "user", "content": "Extract the search query from the following message: " + message},
+                {"role":"assistant","content":"The search query is: "}
+            ]
+        )
+        query = query_response.choices[0].message.content
+
         for file in docusearch_file:
             
             # edit message saying that the file is being searched
-            await new_message.edit_text("🔬 Buscando en " + file + "...")
+            await new_message.edit_text("🔬 Buscando "+query+" en " + file + "...")
             # if file doesn't end with .json, add it
             if not file.endswith('.json'):
                 file = file + '.json'
             # if file is json
             if file.endswith('.json'):
                 top_n = round(15/len(docusearch_file))
-                similar_entries = await get_json_top_entries(message, file, top_n,update)
-                final_similar_entries += similar_entries[:round(5000/len(docusearch_file))]
+                similar_entries = await get_json_top_entries(query, file, top_n,update)
+                final_similar_entries += similar_entries
+
+        # truncate the final_similar_entries to 5000 characters
+        final_similar_entries = final_similar_entries[:8000]
 
         prompt_messages.append({"role": "user", "content": final_similar_entries})
         
@@ -292,6 +308,10 @@ async def perform_action(intent, entities, message,update):
         prompt_messages.append({"role": "user", "content": message})
 
         await update.message.reply_text("Escribiendo una respuesta...✍️✍️")
+
+        #for each prompt message, print
+        for prompt_message in prompt_messages:
+            print(prompt_message)
 
         response = openai.ChatCompletion.create(
             model=model,
@@ -707,7 +727,7 @@ def vectorize_chunks(text_chunks, metadata,file):
 
     for chunk in text_chunks:
         print('Progress: {}/{}'.format(counter, counter_end))
-        embedding = get_embedding(file+"\n"+chunk,"text-embedding-ada-002")
+        embedding = get_embedding(chunk,"text-embedding-ada-002")
         vectorized_data.append({
             'filename': file,
             'metadata': metadata,

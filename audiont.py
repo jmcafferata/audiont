@@ -207,7 +207,7 @@ async def handle_voice(update, context):
             else:
                 response = await ai.chat(update, transcription, get_settings("GPTversion",update.message.from_user.id))
 
-            await update.message.reply_text(response)
+            
 
     except Exception as e:
         # print and send the formatted traceback // imprimir y enviar el traceback formateado

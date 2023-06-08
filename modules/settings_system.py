@@ -5,14 +5,20 @@ from pathlib import Path
 # function to check if user has folder in users/ folder. if not, create it
 def check_user_folder(user_id):
     user_folder = Path("users/"+str(user_id))
+    global_folder = Path("users/global")
     user_data_folders = ['vectorized','to_vectorize']
     if not user_folder.exists():
         user_folder.mkdir(parents=True, exist_ok=True)
         for folder in user_data_folders:
             Path("users/"+str(user_id)+"/"+folder).mkdir(parents=True, exist_ok=True)
-        return False
-    else:
-        return True
+    
+    
+    if not global_folder.exists():
+        global_folder.mkdir(parents=True, exist_ok=True)
+        for folder in user_data_folders:
+            Path("users/global/"+folder).mkdir(parents=True, exist_ok=True)
+     
+    
     
 
 def check_settings(uid):

@@ -579,10 +579,9 @@ if __name__ == '__main__':
 
     my_username = config.my_username
 
-    check_user_folder()
-
     # create the bot // crear el bot
     application = Application.builder().token(config.telegram_api_key).build()
+
 
     # start handler
     start_handler = CommandHandler('start', start)

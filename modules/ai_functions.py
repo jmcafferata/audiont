@@ -33,6 +33,7 @@ import pdfplumber
 import shutil
 import random
 from modules.settings_system import get_settings, write_settings
+from modules.vectorize import split_text_into_segments, extract_text_from_pdf
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
 openai.api_key = config.openai_api_key
@@ -63,7 +64,10 @@ async def get_json_top_entries(query, database_name, top_n=5,update=None):
     # create a new column with the embeddings converted to string
     df['embedding'] = df['embedding'].apply(lambda x: str(x))
 
-    mensajes_sim = df[['filename','metadata', 'text_chunk', 'embedding']].copy()
+    # add original index to dataframe before sorting
+    df['original_index'] = df.index
+
+    mensajes_sim = df[['filename','metadata', 'text_chunk', 'embedding', 'original_index']].copy()
     print('mensajes_sim: ', mensajes_sim)
 
     message_vector = get_embedding(query, 'text-embedding-ada-002')
@@ -80,16 +84,24 @@ async def get_json_top_entries(query, database_name, top_n=5,update=None):
     
     related_data = ''
 
-    for index, row in mensajes_sim[['metadata', 'text_chunk']].head(top_n).iterrows():
-        print(str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n')
-        if update:
-            await update.message.reply_text('👓 Data relacionada...👇\n' + str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n')
-        try:
-            related_data += str(row['filename']) + ' - ' + str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n'
+    for index, row in mensajes_sim[['metadata', 'text_chunk', 'original_index']].head(top_n).iterrows():
+        related_chunk = ''
+        # get adjacent chunks
+        original_index = row['original_index']
+        if original_index > 0:
+            prev_row = df.loc[original_index - 1]
+            related_chunk += str(prev_row['metadata']) + ' - ' + str(prev_row['text_chunk']) + ' (Previous chunk)\n\n'
+        
+        related_chunk += str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n'
 
-        except:
-            related_data += str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n'
-    
+        if original_index < len(df) - 1:
+            next_row = df.loc[original_index + 1]
+            related_chunk += str(next_row['metadata']) + ' - ' + str(next_row['text_chunk']) + ' (Next chunk)\n\n'
+        
+        if update:
+            await update.message.reply_text('👓 Data relacionada...👇\n\n' + related_chunk)
+        related_data += related_chunk
+
     return related_data
 
 def get_top_entries(db, query, top_n=15):
@@ -115,7 +127,8 @@ def get_top_entries(db, query, top_n=15):
         # delete the similarity column
         del row['similarity']
         del row['embedding']
-        del row['row_id']
+        if 'row_id' in row:
+            del row['row_id']
         # Convert the row to a string and join the values using '|'
         row_str = ' '.join(map(str, row.values))
         # Append the row string to 'similar_entries' followed by a newline character
@@ -127,6 +140,9 @@ async def understand_intent(update, message):
     # get the message from the user // obtener el mensaje del usuario
     
     prompt = []
+    # get model from settings
+    model = get_settings('GPTversion', update.message.from_user.id)
+
     # get global json documents from the users/global folder only if they are JSONs
     global_jsons = [f for f in os.listdir('users/global/vectorized') if f.endswith('.json')]
     # get the json documents from the user's folder
@@ -135,7 +151,7 @@ async def understand_intent(update, message):
     jsons = global_jsons + user_jsons
 
     intent_response = openai.ChatCompletion.create(
-                model="gpt-4",
+                model=model,
                 temperature=0.5,
                 messages=[
                     {"role": "system", "content": """based on the user input, the available functions and available documents, you will respond with the name of the function to execute. if you don't know, respond "chat"
@@ -144,7 +160,8 @@ available_functions=[
 {"function":"chat","default":"true","fallback":"true","description":"for chatting with the AI chatbot","example_user_message":"hola! todo bien?"},
 {"function":"docusearch","description":"for looking up relevant information in one of the user documents, based on the available_documents","example_user_message":"buscar los efectos de la microdosis en el libro de Hoffman"},
 {"function":"scrape","description":"for scraping the internet for additional data","example_user_message":"buscar en cledara.com los features de Cledara"},
-{"function":"audiosearch","description":"for looking up relevant information in previous related messages","example_user_message":"buscar en audios anteriores un presupuesto de baño"},
+{"function":"messagesearch","description":"for looking up relevant information in previous related messages","example_user_message":"buscar en mensajes anteriores un presupuesto de baño"},
+{"function":"messagestore","description":"for logging messages","example_user_message":"anotar que un pancho cuesta cinco dólares"},
 {"function":"personality","description":"for changing the personality of the AI chatbot","example_user_message":"cambiar la personalidad a la de un abogado"},
 {"function":"vocabulary","description":"for changing the vocabulary of the AI chatbot","example_user_message":"agregar las siguientes palabras al vocabulario: 'schadenfreude', 'watafak', 'papafrita'"},    
 ]
@@ -220,7 +237,7 @@ async def perform_action(intent, entities, message,update):
 
 
 
-        
+    
 
     ######################### DOCUSEARCH #########################
     elif intent.startswith('docusearch'):
@@ -239,7 +256,7 @@ async def perform_action(intent, entities, message,update):
 
         print('files: ', files)
         docusearch_response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model=model,
             temperature=0.2,
             messages=[
                 {"role": "system", "content": """Prompt: As a powerful language model, your task is to help users by providing relevant JSON documents based on their search query. A user will provide you with a search query and a list of available JSON documents. You must respond with an array of the files that are even remotely relevant to the query.
@@ -276,7 +293,7 @@ async def perform_action(intent, entities, message,update):
 
         #extract the search query from the message
         query_response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model=model,
             temperature=0.2,
             messages=[
                 {"role":"system","content":"Example input: 'buscar en henry george el concepto de impuesto único'.\nExample output: 'impuesto único'"},
@@ -295,7 +312,7 @@ async def perform_action(intent, entities, message,update):
                 file = file + '.json'
             # if file is json
             if file.endswith('.json'):
-                top_n = round(15/len(docusearch_file))
+                top_n = round(5/len(docusearch_file))
                 similar_entries = await get_json_top_entries(query, file, top_n,update)
                 final_similar_entries += similar_entries
 
@@ -395,10 +412,57 @@ async def perform_action(intent, entities, message,update):
 
         await typing_message.edit_text(response_string)
 
+    ######################### MESSAGESTORE #########################
 
-    ######################### AUDIOSEARCH #########################
-    elif intent.startswith('audiosearch'):
-        await update.message.reply_text('searching audios')
+    elif intent.startswith('messagestore'):
+
+        now = datetime.now()
+
+        #check if there is a username and a full name
+        if update.message.from_user.username is None:
+            #get user id
+            username = "User ID: "+str(update.message.from_user.id)
+        else:
+            #get user username
+            username = update.message.from_user.username
+        #check if full name is none
+        if update.message.from_user.full_name is None:
+            #get user id
+            full_name = "User ID: "+str(update.message.from_user.id)
+        else:
+            full_name = update.message.from_user.full_name
+        
+        #embed and store the message in db/messages.csv
+        message_vector = get_embedding(message, 'text-embedding-ada-002')
+        
+        #check if global/messages.csv exists. if not, create it
+        if not os.path.exists('users/global/messages.csv'):
+            with open('users/global/messages.csv', 'w', encoding='utf-8') as f:
+                f.write('date|full_name|message|embedding\n')
+        with open('users/global/messages.csv', 'a', encoding='utf-8') as f:
+            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message+'|'+str(message_vector)+'\n')
+        await update.message.reply_text('✍️ ¡Anotado!')
+
+    ######################### MESSAGESEARCH #########################
+    elif intent.startswith('messagesearch'):
+        await update.message.reply_text('🔍 Buscando en anotaciones...')
+        # get the 'users/global/messages.csv' and find the most similar messages
+        messages_file = 'users/global/messages.csv'
+        top_n = 5
+        similar_messages = get_top_entries(messages_file,message,top_n)
+        print("################ similar_messages ############\n", similar_messages)
+        top_messages_response = openai.ChatCompletion.create(
+            model=model,
+            temperature=0.2,
+            messages=[
+                {"role": "user", "content": message},
+                {"role":"user","content": "Los siguientes mensajes pueden ayudar a contestar mi pregunta:\n"},
+                {"role":"user","content": similar_messages},
+                {"role":"assistant","content":"En base a los mejores anteriores, a respuesta a tu pregunta es: "}
+            ])
+        top_messages_response_string = top_messages_response.choices[0].message.content
+        print("################ top_messages_response_string ############\n", top_messages_response_string)
+        await update.message.reply_text(top_messages_response_string)
     
     ######################### PERSONALITY #########################
     elif intent.startswith('personality'):
@@ -427,7 +491,7 @@ async def perform_action(intent, entities, message,update):
         # get the current vocabulary from the user settings
         current_vocabulary = get_settings("vocabulary", update.message.from_user.id)
         vocabulary_response = openai.ChatCompletion.create(
-            model="gpt-4",  
+            model=model,  
             temperature=0.2,
             messages=[
                 {"role": "user", "content": message + "\nCurrent vocabulary: " + current_vocabulary + "\n\nReescribir el vocabulario en base al pedido.\n\n"},
@@ -616,13 +680,16 @@ async def generate_prompt_completion_pair(user_id):
 
 async def chat(update,message,model):
 
+    uid = update.message.from_user.id
+
     # if users/global folder doesn't exist, create it
     if not os.path.exists('users/global'):
         os.makedirs('users/global')
 
+
     now = datetime.now()
 
-    print("################# ENTERING CHAT MODE #################")
+  
 
     # check what the user wants
     intent = await understand_intent(update, message)
@@ -659,17 +726,28 @@ async def secretary(update,message,context):
     return "¡Mensaje guardado!"
     
 ################### VECTORIZE ############################
+# get user language
+def get_user_language(user_id):
+    # get the language from the user's config file
+    with open('users/'+str(user_id)+'/settings.json', 'r', encoding='utf-8') as f:
+        settings = json.load(f)
+    return settings['language']
+
+# vectorize a text
 
 def read_files(input_folder):
+    # content is a list of dictionaries
+    # schema: text, filename, pagenum, metadata
     content = []
     for root, dirs, files in os.walk(input_folder):
         counter = 0
         counter_end = len(files)
         metadata = ''
+        # for each file in the folder
         for file in files:
-            # if file name doesnt start with metadata_
+            # if file name doesnt start with metadata_, it's a file with text
             if not file.startswith('metadata_'):
-                print('Progress: {}/{}'.format(counter, counter_end))
+                # TODO: progress bar
                 print(file)
                 # get the file name without the extension
                 file_name = os.path.splitext(file)[0]
@@ -677,15 +755,18 @@ def read_files(input_folder):
                 if os.path.exists(os.path.join(root, 'metadata_' + file_name+'.txt')):
                     with open(os.path.join(root, 'metadata_' + file_name+'.txt'), 'r', encoding='utf-8') as f:
                         metadata = f.read()
-
-                if file.endswith('.txt'):
+                # if it's a txt file that's not metadata
+                if file.endswith('.txt') and not file.startswith('metadata_'):
                     with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
-                        content.append((f.read(), file, 0,''))  # Add 'None' for the page number
+                        content.append((f.read(), file, 0,metadata))  # Add 'None' for the page number
+                # if it's a pdf file
                 elif file.endswith('.pdf'):
                     with pdfplumber.open(os.path.join(root, file)) as pdf:
                         for page_num in range(len(pdf.pages)):
                             page = pdf.pages[page_num]
                             text = page.extract_text()
+                            from vectorize import split_text_into_segments
+                            segments = split_text_into_segments(text,language='es')
                             content.append((text, file, page_num,metadata))
                             print(content)
                 elif file.endswith('.html'):
@@ -790,9 +871,29 @@ async def vectorize(update, context, uid):
         for file in files:
             os.remove(os.path.join(root, file))
 
+
+async def vectorize_new(update, context,uid):
+    # get file
+    file = "Manual Scholas Ciudadania 2023.txt"
+    if file.endswith('.pdf'):
+        text = extract_text_from_pdf(file)
+    elif file.endswith('.txt'):
+        with open(file, 'r', encoding='utf-8') as f:
+            text = f.read()
+    print(text)
+    segments = split_text_into_segments(text,language='es')
+    print(len(segments))
+    vectorized_chunks = vectorize_chunks(segments,'','')
+    # Save the vectorized data for each file with its original name
+    json_filepath = 'vect.json'
+    with open(json_filepath, 'w', encoding='utf-8') as f:
+        json.dump(vectorized_chunks, f, ensure_ascii=False)
+
 ################### v1 ############################
 
 async def complete_prompt(reason, message,username,update):
+
+    model = get_settings('GPTmodel',update.message.from_user.id)
 
     user_name = 'Anónimo'
     # THE JUICE // EL JUGO
@@ -804,7 +905,7 @@ async def complete_prompt(reason, message,username,update):
     
 
     if (reason == "summary"):
-        model = "gpt-3.5-turbo"
+        model = model
         clean.options = []
         chat_messages.append({"role":"user","content":"""
         Hola, me acaban de enviar un mensaje de voz. Dice lo siguiente:
@@ -817,7 +918,7 @@ async def complete_prompt(reason, message,username,update):
 
         
     elif (reason == "answer"):
-        model = "gpt-4"
+        model = model
         chat_messages.append({"role":"user","content":"""
         Me acaban de enviar un mensaje de voz. Dice lo siguiente:
     

@@ -442,6 +442,29 @@ async def chat4(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # a function that handles the /vectorizar command. It returns a link that takes them to redquequen.com/vectorizar/user_id // una función que maneja el comando /vectorizar. Devuelve un enlace que los lleva a redquequen.com/vectorizar/user_id
 
+async def anotar_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    try:
+        write_settings(key="anotar", value="on", uid=update.message.from_user.id)
+        await update.message.reply_text("👂 Mandá audios o escribí cosas para que queden anotadas 📃")
+
+    except Exception as e:
+        exception_traceback = traceback.format_exc()
+        print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n', exception_traceback)
+
+
+async def anotar_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    try:
+        write_settings(key="anotar", value="of", uid=update.message.from_user.id)
+        await update.message.reply_text("👂 Ya no voy a anotar más nada 📃")
+    except Exception as e:
+        exception_traceback = traceback.format_exc()
+        print('⬇️⬇️⬇️⬇️ Error en instructions ⬇️⬇️⬇️⬇️\n', exception_traceback)
+
+# a function that handles the /vectorizar command. It returns a link that takes them to redquequen.com/vectorizar/user_id // una función que maneja el comando /vectorizar. Devuelve un enlace que los lleva a redquequen.com/vectorizar/user_id
+
+
 
 async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get the user id // obtener el id del usuario
@@ -508,7 +531,7 @@ async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         write_settings(key="flask_testing", value="True", uid=update.message.from_user.id)
         await update.message.reply_text("flask_testing is now True")
-
+    await ai.vectorize_new(update,context,user_id)
 
 async def docusearch(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # get the user id // obtener el id del usuario
@@ -555,6 +578,8 @@ if __name__ == '__main__':
     current_response_options = []
 
     my_username = config.my_username
+
+    check_user_folder()
 
     # create the bot // crear el bot
     application = Application.builder().token(config.telegram_api_key).build()
@@ -612,6 +637,11 @@ if __name__ == '__main__':
     scrapear_handler = CommandHandler('scrapear', scrapear)
     application.add_handler(scrapear_handler)
 
+    anotar_on_handler = CommandHandler('anotar_on', anotar_on)
+    application.add_handler(anotar_on_handler)
+
+    anotar_off_handler = CommandHandler('anotar_off', anotar_off)
+    application.add_handler(anotar_off_handler)
 
     # a callback query handler // un manejador de consulta de devolución de llamada
     callback_handler = CallbackQueryHandler(callback=callback)
@@ -620,3 +650,5 @@ if __name__ == '__main__':
     # start the bot // iniciar el bot
     application.run_polling()
     # logger.info('Bot started')
+
+   

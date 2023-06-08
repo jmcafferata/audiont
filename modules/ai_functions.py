@@ -98,8 +98,12 @@ async def get_json_top_entries(query, database_name, top_n=5,update=None):
             next_row = df.loc[original_index + 1]
             related_chunk += str(next_row['metadata']) + ' - ' + str(next_row['text_chunk']) + ' (Next chunk)\n\n'
         
-        if update:
-            await update.message.reply_text('👓 Data relacionada...👇\n\n' + related_chunk)
+        print('related_chunk: ', related_chunk)
+        # if update:
+        #     # trim the chunk to 4000 characters
+        #     if len(related_chunk) > 4000:
+        #         related_chunk = related_chunk[:4000] + '...'
+        #     await update.message.reply_text('👓 Data relacionada...👇\n\n' + related_chunk)
         related_data += related_chunk
 
     return related_data
@@ -312,7 +316,7 @@ async def perform_action(intent, entities, message,update):
                 file = file + '.json'
             # if file is json
             if file.endswith('.json'):
-                top_n = round(5/len(docusearch_file))
+                top_n = round(7/len(docusearch_file))
                 similar_entries = await get_json_top_entries(query, file, top_n,update)
                 final_similar_entries += similar_entries
 

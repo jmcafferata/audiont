@@ -17,6 +17,7 @@ def check_user_folder(user_id):
         global_folder.mkdir(parents=True, exist_ok=True)
         for folder in user_data_folders:
             Path("users/global/"+folder).mkdir(parents=True, exist_ok=True)
+
      
     
     
@@ -29,7 +30,7 @@ def check_settings(uid):
 
     default_settings = {
         "access_level": "user",
-        "GPTversion": "4",
+        "GPTversion": "gpt-4",
         "flask_testing": "False",
         "docusearch": "False",
         "uid": str(uid),

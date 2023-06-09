@@ -875,7 +875,6 @@ async def vectorize(update, context, uid):
         for file in files:
             os.remove(os.path.join(root, file))
 
-
 async def vectorize_new(update, context,uid):
     # get file
     file = "Manual Scholas Ciudadania 2023.txt"
@@ -892,67 +891,3 @@ async def vectorize_new(update, context,uid):
     json_filepath = 'vect.json'
     with open(json_filepath, 'w', encoding='utf-8') as f:
         json.dump(vectorized_chunks, f, ensure_ascii=False)
-
-################### v1 ############################
-
-async def complete_prompt(reason, message,username,update):
-
-    model = get_settings('GPTmodel',update.message.from_user.id)
-
-    user_name = 'Anónimo'
-    # THE JUICE // EL JUGO
-
-    now = datetime.now(timezone)
-
-    chat_messages = []
-    chat_messages.append({"role":"system","content":config.personalidad + "\n Today is " + now.strftime("%d/%m/%Y %H:%M:%S")})
-    
-
-    if (reason == "summary"):
-        model = model
-        clean.options = []
-        chat_messages.append({"role":"user","content":"""
-        Hola, me acaban de enviar un mensaje de voz. Dice lo siguiente:
-        
-        """ + message + """
-
-        Tengo que responder este mensaje. Haceme un resumen del mensaje y dame 4 opciones de respuesta:
-        las primeras 3 son contextuales y son títulos de posibles respuestas distintas (positiva, negativa, neutral) que se le podría dar al mensaje de voz (máximo 40 caracteres). la cuarta opción es -Otra respuesta-.
-        Las opciones tienen que estar al final y con el formato 1.,2.,3.,4. y deben contener emojis que ilustren el sentimiento de la respuesta."""})
-
-        
-    elif (reason == "answer"):
-        model = model
-        chat_messages.append({"role":"user","content":"""
-        Me acaban de enviar un mensaje de voz. Dice lo siguiente:
-    
-        """ + csvm.get_last_audio() + """
-        
-        Tengo que responder este mensaje con las siguientes instrucciones:
-        
-        """ + message + """
-        
-        Escribir el mensaje de parte mía hacia el remitente, usando mis instrucciones como guía (pero no es necesario poner literalmente lo que dice la instrucción), mi personalidad y usando el mismo tono conversacional que mi interlocutor. Ofrecer la mayor cantidad de ayuda posible, y ser bien específico y claro, con lenguaje simple e informal argentino."""})
-
-    print("############### FIN DE CONFIGURACIÓN DEL PROMPT ################")
-    print("############### PROMPTING THE AI ################")
-    print('chat_messages: ', chat_messages)
-
-    gpt_response = openai.ChatCompletion.create(
-    model=model,
-    messages=chat_messages,
-    )
-
-    
-    # get the text from the response // obtener el texto de la respuesta
-    text = (gpt_response.choices[0].message.content)
-    # decode the text // decodificar el texto
-    decoded_text = decode.decode_utf8(text)
-
-    # decoded text without new lines
-    decoded_text_without_new_lines = decoded_text.replace("\n"," - ")
-
-    #store the message in the csv // almacenar el mensaje en el csv
-    # if the message doesn't start with the word GOOGLE (indicating that it's not a google search), store it in the csv // si el mensaje no comienza con la palabra GOOGLE (indicando que no es una búsqueda de Google), guárdelo en el csv
-    print("Response:\n"+decoded_text)
-    return decoded_text

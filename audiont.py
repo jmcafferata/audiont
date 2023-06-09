@@ -159,43 +159,7 @@ async def handle_voice(update, context):
         # check if message has caption (es un audio de WhatsApp)
         if message.caption:
 
-
-            # check if username is  config.my_username
-            if username == config.my_username:
-
-                csvm.store_to_csv(message=transcription)
-                # call the prompt function // llamar a la función prompt
-                response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username, update=update)
-
-                # call the clean_options function // llamar a la función clean_options
-                response_text, options = await clean.clean_options(response)
-
-                # add the options to the current response options
-                for option in options:
-                    current_response_options.append(option)
-
-                # reply to the message with the summary and the 5 options // responder al mensaje con el resumen y las 5 opciones
-                await update.message.reply_text(response_text, reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton(
-                                text=options[0], callback_data="0")
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                text=options[1], callback_data="1")
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                text=options[2], callback_data="2")
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                text=options[3], callback_data="3")
-                        ]
-                    ]
-                ))
-                return AWAIT_INSTRUCTIONS
+            csvm.store_to_csv(message=transcription)
 
         # if the message has no caption (it's a voice note)
         else:
@@ -217,97 +181,6 @@ async def handle_voice(update, context):
     return ConversationHandler.END
 
 
-# function that handles the voice notes // función principal que maneja las notas de voz
-async def handle_audio(update, context):
-
-    print("handle_audio")
-    print(str(update))
-
-    check_user_folder(update.message.from_user.id)
-
-    message = update.message
-    await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
-
-    # get sender username, but first check if it's None
-    if update.message.from_user.username == None:
-        username = update.message.from_user.full_name
-    else:
-        username = update.message.from_user.username
-
-    try:
-
-        transcription = await ai.transcribe_audio(update)
-        response = None  # Initialize the 'response' variable here
-
-        await update.message.reply_text("El audio dice:")
-        await update.message.reply_text(transcription)
-
-        # check if message has caption (es un audio de WhatsApp)
-        if message.caption:
-
-            # check if username is  config.my_username
-            if username == config.my_username:
-
-                csvm.store_to_csv(message=transcription)
-                # call the prompt function // llamar a la función prompt
-                response = await ai.complete_prompt(reason="summary", message=transcription, username=update.message.from_user.username, update=update)
-
-                # call the clean_options function // llamar a la función clean_options
-                response_text, options = await clean.clean_options(response)
-
-                # add the options to the current response options
-                for option in options:
-                    current_response_options.append(option)
-
-                # reply to the message with the summary and the 5 options // responder al mensaje con el resumen y las 5 opciones
-                await update.message.reply_text(response_text, reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton(
-                                text=options[0], callback_data="0")
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                text=options[1], callback_data="1")
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                text=options[2], callback_data="2")
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                text=options[3], callback_data="3")
-                        ]
-                    ]
-                ))
-                return AWAIT_INSTRUCTIONS
-
-        # if the message has no caption (it's a voice note)
-        else:
-
-            if username == config.my_username:
-                response = await ai.chat(update, transcription, get_settings("GPTversion"))
-            else:
-                response = "🫡"
-
-            await update.message.reply_text(response)
-
-    except Exception as e:
-        # print and send the formatted traceback // imprimir y enviar el traceback formateado
-        traceback.print_exc()
-        await update.message.reply_text(traceback.format_exc())
-
-    return ConversationHandler.END
-
-
-# function that handles the voice notes when responding to a voice note // función principal que maneja las notas de voz cuando se responde a una nota de voz
-async def respond_audio(update, context):
-    # call the transcribe_audio function // llamar a la función transcribe_audio
-    transcription = await ai.transcribe_audio(update)
-    response = await ai.complete_prompt(reason="answer", message=transcription, username=update.message.from_user.username, update=update)
-    await update.message.reply_text(response)
-    return ConversationHandler.END
-
 
 # Function to handle files
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -315,13 +188,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.callback_query.from_user.id
 
     data = update.callback_query.data
-    print("Data: "+data)
-    # if the data is a number, then it's an instruction // si los datos son un número, entonces es una instrucción
-    if data.isdigit():
-        print("current_response_options: "+str(current_response_options))
-        response = await ai.complete_prompt("answer", current_response_options[int(data)], update.callback_query.from_user.username, update)
-        # send a message saying that if they didn't like the response, they can send a voice note with instructions // enviar un mensaje diciendo que si no les gustó la respuesta, pueden enviar una nota de voz con instrucciones
-        await update.callback_query.message.reply_text(response)
 
     if data == "vectorizar":
         try:
@@ -533,43 +399,7 @@ async def flask_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("flask_testing is now True")
     await ai.vectorize_new(update,context,user_id)
 
-async def docusearch(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # get the user id // obtener el id del usuario
-    user_id = update.message.from_user.id
-    # send a message with the link // enviar un mensaje con el enlace
-    # get docusearch from settings.json
-    if get_settings("docusearch",update.message.from_user.id) == "True":
-        write_settings(key="docusearch", value="False", uid=update.message.from_user.id)
-        await update.message.reply_text("No voy a buscar en documentos.")
-    else:
-        write_settings(key="docusearch", value="True", uid=update.message.from_user.id)
-        # set scrapear to False
-        write_settings(key="scrapear", value="False", uid=update.message.from_user.id)
-        await update.message.reply_text("Voy a buscar en documentos.")
 
-async def access_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # get the user id // obtener el id del usuario
-    user_id = update.message.from_user.id
-    # send a message with the link // enviar un mensaje con el enlace
-    # get settings from settings.json
-    if get_settings("access_level",update.message.from_user.id) == "global":
-        write_settings(key="access_level", value="user", uid=update.message.from_user.id)
-        await update.message.reply_text("Sólo busco en textos tuyos.")
-    else:
-        write_settings(key="access_level", value="global", uid=update.message.from_user.id)
-        await update.message.reply_text("Sólo busco en textos globales.")
-
-async def scrapear(update: Update, context:ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    # get scrapear from settings.json
-    if get_settings("scrapear",update.message.from_user.id) == "True":
-        write_settings(key="scrapear", value="False", uid=update.message.from_user.id)
-        await update.message.reply_text("❌ Ahora no voy a scrapear la web.")
-    else:
-        write_settings(key="scrapear", value="True", uid=update.message.from_user.id)
-        # set docusearch to false
-        write_settings(key="docusearch", value="False", uid=update.message.from_user.id)
-        await update.message.reply_text("✅ Pasame links y armo una nota con eso.")
 
 
 # main function // función principal
@@ -598,12 +428,6 @@ if __name__ == '__main__':
         filters.VOICE & (~filters.COMMAND), handle_voice)
     application.add_handler(voice_handler)
 
-    # for when the bot receives a voice note // para cuando el bot recibe una nota de voz
-    # exclude conversation states // excluir estados de conversación
-    audio_handler = MessageHandler(
-        filters.AUDIO & (~filters.COMMAND), handle_audio)
-    application.add_handler(audio_handler)
-
     # /chat3 command
     chat3_handler = CommandHandler('chat3', chat3)
     application.add_handler(chat3_handler)
@@ -623,18 +447,6 @@ if __name__ == '__main__':
     # /entrenar command
     entrenar_handler = CommandHandler('entrenar', entrenar)
     application.add_handler(entrenar_handler)
-
-    # /docusearch command
-    docusearch_handler = CommandHandler('docusearch', docusearch)
-    application.add_handler(docusearch_handler)
-
-    # /access_level command
-    access_level_handler = CommandHandler('access_level', access_level)
-    application.add_handler(access_level_handler)
-
-    # /scrapear command
-    scrapear_handler = CommandHandler('scrapear', scrapear)
-    application.add_handler(scrapear_handler)
 
     anotar_on_handler = CommandHandler('anotar_on', anotar_on)
     application.add_handler(anotar_on_handler)

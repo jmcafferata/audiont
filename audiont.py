@@ -182,6 +182,8 @@ async def handle_voice(update, context):
 
 
 
+
+
 # Function to handle files
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     #get user id from callback query
@@ -425,8 +427,10 @@ if __name__ == '__main__':
     # for when the bot receives a voice note // para cuando el bot recibe una nota de voz
     # exclude conversation states // excluir estados de conversación
     voice_handler = MessageHandler(
-        filters.VOICE & (~filters.COMMAND), handle_voice)
+        # filters VOICE or AUDIO
+        filters.VOICE | filters.AUDIO & (~filters.COMMAND), handle_voice)
     application.add_handler(voice_handler)
+    
 
     # /chat3 command
     chat3_handler = CommandHandler('chat3', chat3)

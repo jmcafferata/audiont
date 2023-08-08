@@ -7,7 +7,7 @@ def convert_to_wav(audio_file):
     new_file_name = audio_file_name_without_extension + ".mp3"
     
     # compress the audio
-    command = ["ffmpeg", "-i", audio_file, "-vn", "-ar", "44100", "-ac", "2", "-b:a", "192k", new_file_name]
+    command = ["ffmpeg", "-i", audio_file, "-b:a", "192k", new_file_name]
     
     try:
         subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

@@ -565,8 +565,10 @@ async def transcribe_audio(update):
     # get the name of the audio file // obtener el nombre del archivo de audio
     file_path = Path(new_file.file_path).name
     # convert the audio file to a wav file // convertir el archivo de audio a un archivo wav
+    transcription_text = ""
     try:
-        new_audio_path = convert.convert_to_wav(file_path)
+        # new_audio_path = convert.convert_to_wav(file_path)
+        new_audio_paths = convert.split_in_chunks(file_path)
     except Exception as e:
         print("⬇️⬇️⬇️⬇️ Error en la conversión de audio ⬇️⬇️⬇️⬇️\n",e)
         # send a message to the user, telling them there was an error // enviar un mensaje al usuario, diciéndoles que hubo un error
@@ -576,32 +578,33 @@ async def transcribe_audio(update):
         # send an images/cat.jpg to the user // enviar una imagen a la usuaria
         await update.message.reply_photo(open('images/cat.jpg', 'rb'))
     else:
-        # open the wav file // abrir el archivo wav
-        wav_audio = open(new_audio_path, "rb")
-        # call the OpenAI API to get the text from the audio file // llamar a la API de OpenAI para obtener el texto del archivo de audio
-        try:
-            print("⬆️⬆️⬆️⬆️ Starting transcription ⬆️⬆️⬆️⬆️")
-            transcription_object = openai.Audio.transcribe(
-            "whisper-1", wav_audio, language="es", prompt="esto es una nota de voz. hay momentos de silencio en el audio, cuidado con eso.")
-            print("Transcription:\n"+transcription_object["text"])
-        except Exception as e:
-            print("⬇️⬇️⬇️⬇️ Error en la transcripción de audio ⬇️⬇️⬇️⬇️\n",e)
-            # send a message to the user, telling them there was an error // enviar un mensaje al usuario, diciéndoles que hubo un error
-            await update.message.reply_text('Hubo un error en la transcripción de audio. Probá de nuevo.')
-            # send e
-            await update.message.reply_text(str(e))
-            # send an images/cat.jpg to the user // enviar una imagen a la usuaria
-            await update.message.reply_photo(open('images/sad.jpg', 'rb'))
-            raise e
-        else:
-            print("Transcription:\n"+transcription_object["text"])
-            # delete audio files from the server
-            wav_audio.close()
-            os.remove(file_path)
-            os.remove(new_audio_path)
-
-
-            return transcription_object["text"]
+        # transcribe chunks
+        print(new_audio_paths)
+        for new_audio_path in new_audio_paths:
+            # open the wav file // abrir el archivo wav
+            wav_audio = open(new_audio_path, "rb")
+            # call the OpenAI API to get the text from the audio file // llamar a la API de OpenAI para obtener el texto del archivo de audio
+            try:
+                print("⬆️⬆️⬆️⬆️ Starting transcription ⬆️⬆️⬆️⬆️")
+                transcription_object = openai.Audio.transcribe(
+                "whisper-1", wav_audio, language="es", prompt="esto es una nota de voz. hay momentos de silencio en el audio, cuidado con eso.")
+                transcription_text += transcription_object["text"]
+            except Exception as e:
+                print("⬇️⬇️⬇️⬇️ Error en la transcripción de audio ⬇️⬇️⬇️⬇️\n",e)
+                # send a message to the user, telling them there was an error // enviar un mensaje al usuario, diciéndoles que hubo un error
+                await update.message.reply_text('Hubo un error en la transcripción de audio. Probá de nuevo.')
+                # send e
+                await update.message.reply_text(str(e))
+                # send an images/cat.jpg to the user // enviar una imagen a la usuaria
+                await update.message.reply_photo(open('images/sad.jpg', 'rb'))
+                raise e
+            else:
+                # delete audio files from the server
+                wav_audio.close()
+                os.remove(new_audio_path)
+        print("Transcription:\n"+transcription_object["text"])
+        os.remove(file_path)
+        return transcription_text
     
 ################### TRAINING ############################
 

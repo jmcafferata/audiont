@@ -73,7 +73,7 @@ def transcribe_audios(audio_files, language="es", prompt=""):
     return text
 
 
-# openai.api_key = "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"
+
 # language = "es"
 # audio_file = 'testaudio.ogg'
 # audio_files = split_in_chunks(audio_file)

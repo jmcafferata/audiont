@@ -46,6 +46,7 @@ def split_in_chunks(audio_file):
 
         # get the list of audio files
         audio_files = [file for file in os.listdir() if file.startswith(random_number) and file.endswith(".mp3")]
+        sort(audio_files)
     except subprocess.CalledProcessError as e:
         print(f"FFmpeg error:\n{e.stderr.decode('utf-8')}")
         raise e

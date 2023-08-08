@@ -725,9 +725,51 @@ async def secretary(update,message,context):
     #embed and store the message in db/messages.csv
     message_vector = get_embedding(message, 'text-embedding-ada-002')
     with open('db/messages.csv', 'a', encoding='utf-8') as f:
-        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message+'|'+message_vector+'\n')
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message+'|'+str(message_vector)+'\n')
     
-    return "¡Mensaje guardado!"
+    typing_message = await update.message.reply_text('✍️✍️✍️')
+    # check if chat.csv exists in users/uid folder
+    if not os.path.exists('users/'+str(update.message.from_user.id)+'/chat.csv'):
+    # create chat.csv
+        with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'w', encoding='utf-8') as f: 
+            f.write('date|role|content\n')
+    
+    # CONFIG THE MODEL FOR CHAT
+    prompt_messages = []
+    #get global personality from users/global/personality.txt
+    with open('users/global/personality.txt', 'r', encoding='utf-8') as f:
+        personalidad = f.read()
+    prompt_messages.append({"role": "system", "content":personalidad})
+
+    # add chat history to prompt
+    chat_df = pd.read_csv('users/'+str(update.message.from_user.id)+'/chat.csv', sep='|', encoding='utf-8', escapechar='\\')
+    chat_df = chat_df.tail(6)
+    for index, row in chat_df.iterrows():
+        prompt_messages.append({"role": row['role'], "content": row['content']})
+    
+    # add user message to prompt
+    prompt_messages.append({"role": "user", "content": message})
+
+    response = openai.ChatCompletion.create(
+        model='gpt-4',
+        temperature=0.5,
+        messages=prompt_messages
+    )
+
+    response_string = response.choices[0].message.content
+
+    # store the user message on chat.csv but replace new lines with \n
+    with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'a', encoding='utf-8') as f:
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ').replace('|','-')+'\n')
+    
+
+    with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'a', encoding='utf-8') as f:
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')
+
+    print('############ CHAT RESPONSE ############')
+    print(response_string)
+    await typing_message.edit_text(response_string)
+    
     
 ################### VECTORIZE ############################
 # get user language

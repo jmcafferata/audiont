@@ -76,7 +76,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     write_settings("uid", str(update.message.from_user.id),update.message.from_user.id)
     # send a message // enviar un mensaje
     await update.message.reply_text(
-        config.start_message + "\n\nTu user ID es: " + get_settings("uid",update.message.from_user.id)
+        config.start_message
     )
     # check if user has folder in users/ folder. if not, create it
     check_user_folder(update.message.from_user.id)
@@ -100,9 +100,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # if sender isn't in the approved users list, send a message and return
         if username not in config.approved_users:
-            response = await ai.secretary(update, update.message.text, context)
-            await update.message.reply_text(response)
-
+            await ai.secretary(update, update.message.text, context)
+           
         else:
 
             await ai.chat(update, update.message.text, get_settings("GPTversion",update.message.from_user.id))

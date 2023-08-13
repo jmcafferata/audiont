@@ -15,7 +15,7 @@ app = Flask(__name__)
 # uploads folder
 app.config['UPLOAD_FOLDER'] = 'uploads'
 # add /audiont/ to the url
-app.config['APPLICATION_ROOT'] = '/audiont'
+app.config['APPLICATION_ROOT'] = 'audiont'
 
 #try render index.html and debug
 @app.route('/')

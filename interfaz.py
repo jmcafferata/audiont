@@ -11,7 +11,10 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'users/'
 app.config['APPLICATION_ROOT'] = '/'+config.bot_code
 
-
+#render index.html
+@app.route(app.config['APPLICATION_ROOT'] + '/')
+def index():
+    return render_template('index.html')
 
 # Make sure to use a secret key for your application
 app.secret_key = "your-secret-key"

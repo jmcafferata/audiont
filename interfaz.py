@@ -52,7 +52,7 @@ def upload_audio(user_id):
 
         
         # message for the user to download the transcription when it is ready
-        message = '<a href="/get_transcription/'+user_id+'">Acá</a> va a estar lista la transcripción.'
+        message = '<a href="/audiont/get_transcription/'+user_id+'">Acá</a> va a estar lista la transcripción.'
         
         return jsonify({'status': 'success', 'message': message})
     except Exception as e:

@@ -1,5 +1,5 @@
 
-from flask import Flask, flash, request, redirect, url_for, render_template, jsonify
+from flask import Flask, flash, request, redirect, url_for, render_template, jsonify, Blueprint
 from werkzeug.utils import secure_filename
 import os
 import config
@@ -11,20 +11,16 @@ import traceback
 logging.basicConfig(filename='app.log', level=logging.INFO)
 
 
-app = Flask(__name__)
-# uploads folder
-app.config['UPLOAD_FOLDER'] = 'uploads'
-# add audiont to application root
-app.config['APPLICATION_ROOT'] = '/audiont'
+bp = Blueprint('audiont', __name__, template_folder='templates', )
+
 
 #try render index.html and debug
-@app.route('/')
+@bp.route('/')
 def index():
-    app.logger.info("Index route accessed")
     return render_template('index.html')
 
 # Upload audio to server /audiont/upload_audio/<user_id>
-@app.route('/upload_audio/<user_id>', methods=['POST'])
+@bp.route('/upload_audio/<user_id>', methods=['POST'])
 def upload_audio(user_id):
     # check for uploads folder
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
@@ -65,7 +61,7 @@ def upload_audio(user_id):
         return jsonify({'status': 'error', 'error': str(e)})
 
 # /audiont/start_transcription/<user_id>
-@app.route('/start_transcription/<user_id>', methods=['POST'])
+@bp.route('/start_transcription/<user_id>', methods=['POST'])
 def start_transcription(user_id):
     print('start transcription')
     try:
@@ -89,7 +85,7 @@ def start_transcription(user_id):
 
 
 # get transcription from server /get_transcription/<user_id>
-@app.route('/get_transcription/<user_id>', methods=['GET'])
+@bp.route('/get_transcription/<user_id>', methods=['GET'])
 def get_transcription(user_id):
     try:
         #get folder
@@ -105,5 +101,12 @@ def get_transcription(user_id):
         print(e)
         return "La transcripción todavía no está lista. Esperá unos segundos e intentá nuevamente."
     
+
+app = Flask(__name__)
+app.register_blueprint(bp, url_prefix='/audiont')
+# uploads folder
+app.config['UPLOAD_FOLDER'] = 'uploads'
+
+
 if __name__ == '__main__':
     app.run(debug=True)

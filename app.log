@@ -63,3 +63,559 @@ INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai
 INFO:werkzeug: * Restarting with stat
 WARNING:werkzeug: * Debugger is active!
 INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:15:36] "[33mGET / HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:15:39] "[33mGET /audionkt HTTP/1.1[0m" 404 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:15:41] "GET /audiont/ HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:15:41] "[33mGET /audiont/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:15:41] "[33mGET /audiont/static/audiont.jpg HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:15:46] "POST /audiont/upload_audio/717762797 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:17:20] "[33mGET /audiont/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:26:05] "[33mGET /audiont/ HTTP/1.1[0m" 404 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:26:08] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:26:08] "GET /static/style.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:26:08] "GET /static/audiont.jpg HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:30:49] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:30:49] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:30:49] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:30:56] "POST /upload_audio/78391273 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:32:29] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:32:29] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:32:29] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:32:29] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:32:29] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:32:29] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:32:34] "POST /upload_audio/538547005 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:33:46] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:33:47] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:33:47] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:33:50] "POST /upload_audio/464178576 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:33:50] "[33mPOST /audiont/start_transcription/464178576 HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:33:54] "[33mGET /audiont/get_transcription/464178576 HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:33:58] "[33mGET /audiont/get_transcription/464178576 HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:34:02] "GET /get_transcription/464178576 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:34:06] "GET /get_transcription/464178576 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:34:08] "GET /get_transcription/464178576 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:34:17] "GET /get_transcription/464178576 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:34:39] "GET /get_transcription/464178576 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:36:08] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:36:08] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:36:08] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:36:12] "POST /upload_audio/774326283 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:36:12] "[33mPOST /audiont/start_transcription/774326283 HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:36:22] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:36:53] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:36:53] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:36:53] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:36:59] "POST /upload_audio/84880689 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:37:00] "[35m[1mPOST /start_transcription/84880689 HTTP/1.1[0m" 500 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:38:54] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:38:54] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:38:54] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:38:59] "POST /upload_audio/44982251 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:38:59] "POST /start_transcription/44982251 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:41:51] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:41:51] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:41:51] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:41:58] "POST /upload_audio/572036850 HTTP/1.1" 200 -
+INFO:openai:error_code=invalid_api_key error_message='Incorrect API key provided: sk-d9Nkf***************************************pPKO. You can find your API key at https://platform.openai.com/account/api-keys.' error_param=None error_type=invalid_request_error message='OpenAI API error received' stream_error=False
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:42:04] "POST /start_transcription/572036850 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\config.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:50:53] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:50:53] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:50:53] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:50:57] "POST /upload_audio/619636459 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:50:57] "POST /start_transcription/619636459 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:51:35] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:51:35] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:51:35] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:51:39] "POST /upload_audio/383348583 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:51:40] "POST /start_transcription/383348583 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:03:05] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:03:05] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:03:05] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:03:10] "POST /upload_audio/172825150 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:03:10] "POST /start_transcription/172825150 HTTP/1.1" 200 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:03:35] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:03:35] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:03:35] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:03:40] "POST /upload_audio/736418047 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:03:40] "POST /start_transcription/736418047 HTTP/1.1" 200 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:06:21] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:06:21] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:06:21] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:06:25] "POST /upload_audio/487204492 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:06:25] "POST /start_transcription/487204492 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:06:52] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:06:52] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:06:52] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:06:56] "POST /upload_audio/150567732 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:06:56] "POST /start_transcription/150567732 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:10:44] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:10:44] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:10:44] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:10:49] "POST /upload_audio/809686484 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:10:50] "POST /start_transcription/809686484 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:14:11] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:14:11] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:14:11] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:14:15] "POST /upload_audio/572492985 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:14:16] "POST /start_transcription/572492985 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:18:39] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:18:39] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:18:39] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:18:43] "POST /upload_audio/120209279 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:18:54] "GET /get_transcription/120209279 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:19:06] "[35m[1mPOST /start_transcription/120209279 HTTP/1.1[0m" 500 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:19:48] "GET /get_transcription/120209279 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:20:25] "GET /get_transcription/120209279 HTTP/1.1" 200 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:20:55] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:20:55] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:20:55] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:21:03] "POST /upload_audio/76306090 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:21:12] "GET /get_transcription/76306090 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:21:13] "[35m[1mPOST /start_transcription/76306090 HTTP/1.1[0m" 500 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:21:15] "GET /get_transcription/76306090 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:24:01] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:24:02] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:24:02] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:24:17] "POST /upload_audio/73386673 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:24:27] "GET /get_transcription/73386673 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:24:28] "[35m[1mPOST /start_transcription/73386673 HTTP/1.1[0m" 500 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:24:29] "GET /get_transcription/73386673 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:25:01] "GET /get_transcription/73382 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:25:28] "GET /get_transcription/73382 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:25:39] "GET /get_transcription/73382 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:26:44] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:26:44] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:26:44] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:26:50] "POST /upload_audio/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:26:53] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:26:59] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:27:05] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:27:09] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:27:09] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:27:12] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:27:14] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:27:25] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:27:25] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:27:32] "[35m[1mPOST /start_transcription/483612384 HTTP/1.1[0m" 500 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:27:32] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:27:32] "GET /get_transcription/483612384 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:06] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:06] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:06] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:11] "POST /upload_audio/488000903 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:17] "POST /start_transcription/488000903 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:56] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:56] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:56] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:56] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:56] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:29:56] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:30:00] "POST /upload_audio/84777972 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:30:20] "GET /get_transcription/84777972 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:30:24] "[35m[1mPOST /start_transcription/84777972 HTTP/1.1[0m" 500 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:06] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:06] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:06] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:12] "POST /upload_audio/353872349 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:13] "GET /get_transcription/353872349 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:15] "GET /get_transcription/353872349 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:19] "GET /get_transcription/353872349 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:20] "[35m[1mPOST /start_transcription/353872349 HTTP/1.1[0m" 500 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:20] "GET /get_transcription/353872349 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:25] "GET /get_transcription/353872349 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:28] "GET /get_transcription/353872349 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:35:42] "GET /get_transcription/353872349 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\modules\\transcription.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:55:36] "GET /get_transcription/464178576 HTTP/1.1" 200 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:55:38] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:55:38] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:55:38] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:55:45] "POST /upload_audio/68918926 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:55:47] "GET /get_transcription/68918926 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:55:58] "GET /get_transcription/68918926 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:56:06] "POST /start_transcription/68918926 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:56:09] "GET /get_transcription/68918926 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:56:09] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:56:09] "[33mGET /get_transcription/static/audiont.jpg HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:56:37] "GET /get_transcription/68918926 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:56:37] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:56:37] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:13] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:14] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:14] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:23] "POST /upload_audio/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:25] "GET /get_transcription/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:44] "[35m[1mPOST /start_transcription/376217872 HTTP/1.1[0m" 500 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:46] "GET /get_transcription/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:46] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:46] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:50] "GET /get_transcription/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:50] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:50] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:55] "GET /get_transcription/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:55] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:57:55] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:58:19] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:58:26] "GET /get_transcription/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:58:26] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:58:26] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:59:41] "GET /get_transcription/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:59:41] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 18:59:41] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:00:04] "GET /get_transcription/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:00:04] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:00:04] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:00:36] "GET /get_transcription/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:00:36] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:00:36] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:01:20] "GET /get_transcription/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:01:20] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:01:20] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:02:27] "GET /get_transcription/376217872 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:02:27] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:02:27] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:05:25] "POST /upload_audio/749681415 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:05:28] "GET /get_transcription/749681415 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:05:30] "[35m[1mPOST /start_transcription/749681415 HTTP/1.1[0m" 500 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:05:32] "GET /get_transcription/749681415 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:05:32] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:05:33] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:07:08] "GET /get_transcription/749681415 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:07:08] "[33mGET /get_transcription/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 19:07:08] "[36mGET /static/audiont.jpg HTTP/1.1[0m" 304 -

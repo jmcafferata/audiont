@@ -16,3 +16,6 @@ chat.csv
 users/
 openai_api_key.txt
 main.py
+uploads/
+tmp/
+/app.log

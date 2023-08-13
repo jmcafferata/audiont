@@ -2,66 +2,60 @@ import os
 import subprocess
 import openai
 import random
+import traceback
+import tempfile
 
 # TRANSCRIPTION MODULE
 # Input: audio file and API key
 # Output: text transcription
 
-# Usage:
-# language = "es"
-# audio_file = 'testaudio.ogg'
-# audio_files = split_in_chunks(audio_file)
-# print(audio_files)
-# transcription = transcribe_audios(audio_files)
+def transcribe(audio_file,openai_api_key):
 
-def split_in_chunks(audio_file):
-
-    # input: audio file
-    # output: list of audio files
-
-    # generate random number from 1 to 1000
-    random_number = str(random.randint(1, 1000))
-
-    # output pattern
-    output_pattern = random_number+'_temp_output_%03d.mp3'
+    # input: audio file. e.g. '/tmp/123456/testaudio.ogg'
+    # output: text transcription
     
+    #check if there's a tmp folder. If not, create it
+    temp_dir = os.path.join(os.getcwd(), 'tmp')
+    if not os.path.exists(temp_dir):
+        os.mkdir(temp_dir)
+
+    random_number = str(random.randint(100000, 999999))
+    os.mkdir(os.path.join(temp_dir, random_number))
+
+    output_pattern = os.path.join(temp_dir, random_number, 'chunk-%03d.mp3')
+
     # Construct the ffmpeg command to split the audio file in chunks of 30 seconds
     command = ['ffmpeg', '-i', audio_file, '-vn', '-map', '0:a',
-            '-f', 'segment', '-segment_time', '30', '-reset_timestamps', '1', '-b:a','192k',output_pattern]
+            '-f', 'segment', '-segment_time', '30', '-reset_timestamps', '1', '-b:a','192k', output_pattern]
 
     try:
         # log the process
         subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        # get the list of audio files
-        audio_files = [file for file in os.listdir() if file.startswith(random_number) and file.endswith(".mp3")]
+        # set the API key
+        openai.api_key = openai_api_key
 
-        # sort the list of audio files
-        audio_files.sort()
-    except subprocess.CalledProcessError as e:
-        print(f"FFmpeg error:\n{e.stderr.decode('utf-8')}")
-        raise e
-    
+        transcription_text = ""
 
-    return audio_files
+        for chunk in os.listdir(os.path.join(temp_dir, random_number)):
+            chunk = os.path.join(temp_dir, random_number, chunk)
+            with open(chunk, "rb") as file:
+                transcription_object = openai.Audio.transcribe(
+                    "whisper-1", file, language='es', prompt="esto es una nota de voz. cuidado con los silencios.",
+                )
+                print("Transcription:\n" + transcription_object["text"])
+                transcription_text += transcription_object["text"]
 
-def transcribe_audios(audio_files, language="es", prompt="", api_key=""):
+            # delete the chunk
+            os.remove(chunk)
+        # delete the folder
+        os.rmdir(os.path.join(temp_dir, random_number))
+        
 
-    # input: list of audio files and API key
-    # output: text transcription
 
-    # set the API key
-    openai.api_key = api_key
-    
-    text = ""
 
-    for audio_file in audio_files:
-        with open(audio_file, "rb") as file:
-            transcription_object = openai.Audio.transcribe(
-                "whisper-1", file, language=language, prompt=prompt
-            )
-            print("Transcription:\n" + transcription_object["text"])
-            text += transcription_object["text"]
-    
-    return text
-
+    except Exception as e:
+        traceback.print_exc()
+        print(e)
+        return None
+    return transcription_text

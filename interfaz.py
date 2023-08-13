@@ -6,22 +6,27 @@ import config
 import random
 import modules.transcription as transcription
 import logging
+import traceback
 
 logging.basicConfig(filename='app.log', level=logging.INFO)
 
 app = Flask(__name__)
-app.config['APPLICATION_ROOT'] = '/'+config.bot_code
+# uploads folder
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
 #try render index.html and debug
-@app.route(app.config['APPLICATION_ROOT'] + '/')
+@app.route('/')
 def index():
     app.logger.info("Index route accessed")
     return render_template('index.html')
 
 # Upload audio to server /audiont/upload_audio/<user_id>
-@app.route(app.config['APPLICATION_ROOT'] + '/upload_audio/<user_id>', methods=['POST'])
+@app.route('/upload_audio/<user_id>', methods=['POST'])
 def upload_audio(user_id):
+    # check for uploads folder
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.mkdir(app.config['UPLOAD_FOLDER'])
+    print(user_id)
     try:
         # create the folder
         folder_name = user_id
@@ -48,38 +53,40 @@ def upload_audio(user_id):
 
         
         # message for the user to download the transcription when it is ready
-        message = 'La transcripción está lista. Puedes descargarla <a href="/'+config.bot_code+'/get_transcription/'+user_id+'">aquí</a>.'
+        message = '<a href="/get_transcription/'+user_id+'">Acá</a> va a estar lista la transcripción.'
         
         return jsonify({'status': 'success', 'message': message})
     except Exception as e:
+        traceback.print_exc()
         print(e)
         return jsonify({'status': 'error', 'error': str(e)})
 
 # /audiont/start_transcription/<user_id>
-@app.route(app.config['APPLICATION_ROOT'] + '/start_transcription/<user_id>', methods=['POST'])
+@app.route('/start_transcription/<user_id>', methods=['POST'])
 def start_transcription(user_id):
+    print('start transcription')
     try:
         #get folder
         folder_name = user_id
 
         #get audio file
-        audio_file = os.path.join(app.config['UPLOAD_FOLDER'], folder_name)
-        # Split the audio in chunks of 30 seconds
-        audio_files = transcription.split_in_chunks(audio_file)
-        transcription_text = transcription.transcribe_audios(audio_files, api_key=config.openai_api_key)
+        audio_file = os.path.join(app.config['UPLOAD_FOLDER'], folder_name, os.listdir(os.path.join(app.config['UPLOAD_FOLDER'], folder_name))[0])
+        transcription_text = transcription.transcribe(audio_file, config.openai_api_key)
 
         # Save the transcription to a txt file
         with open(os.path.join(app.config['UPLOAD_FOLDER'], folder_name, 'transcription.txt'), 'w') as f:
             f.write(transcription_text)
 
-        # Delete the audio files
-        for file in audio_files:
-            os.remove(file)
-    except Exception as e:
-        print(e)
 
-# get transcription from server /audiont/get_transcription/<user_id>
-@app.route(app.config['APPLICATION_ROOT'] + '/get_transcription/<user_id>', methods=['GET'])
+        return None
+    except Exception as e:
+        traceback.print_exc()
+        print(e)
+        return jsonify({'status': 'error', 'error': str(e)})
+
+
+# get transcription from server /get_transcription/<user_id>
+@app.route('/get_transcription/<user_id>', methods=['GET'])
 def get_transcription(user_id):
     try:
         #get folder
@@ -89,10 +96,11 @@ def get_transcription(user_id):
         with open(os.path.join(app.config['UPLOAD_FOLDER'], folder_name, 'transcription.txt'), 'r') as f:
             transcription_text = f.read()
         
-        #return transcription
-        return jsonify({'status': 'success', 'transcription': transcription_text})
+        return render_template('get_transcription.html', transcription_text=transcription_text)
+        
     except Exception as e:
         print(e)
-        return jsonify({'status': 'error', 'error': str(e)})
+        return "La transcripción todavía no está lista. Esperá unos segundos e intentá nuevamente."
+    
 if __name__ == '__main__':
     app.run(debug=True)

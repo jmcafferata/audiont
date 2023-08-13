@@ -123,7 +123,7 @@
         // upload the audio to the server
         let formData = new FormData();
         formData.append("file", this.files[0]);
-        fetch("/audiont/upload_audio/" + id, {
+        fetch("/upload_audio/" + id, {
           method: "POST",
           body: formData,   
         })
@@ -135,7 +135,7 @@
                 let message = document.getElementById("message");
                 message.innerHTML = json["message"];
                 
-                fetch("/audiont/start_transcription/" + id, {
+                fetch("/start_transcription/" + id, {
                     method: "POST"
                 })
                 .then(response => response.json())

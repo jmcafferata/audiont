@@ -11,6 +11,7 @@ logging.basicConfig(filename='app.log', level=logging.INFO)
 
 app = Flask(__name__)
 app.config['APPLICATION_ROOT'] = '/'+config.bot_code
+app.config['UPLOAD_FOLDER'] = 'uploads'
 
 #try render index.html and debug
 @app.route(app.config['APPLICATION_ROOT'] + '/')

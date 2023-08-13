@@ -59,3 +59,7 @@ INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai
 INFO:werkzeug: * Restarting with stat
 WARNING:werkzeug: * Debugger is active!
 INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972

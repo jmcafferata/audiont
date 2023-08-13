@@ -96,6 +96,9 @@
 
     <script type="text/javascript">
 
+        // app prefix
+        let app_prefix = "/audiont";
+
         
         // Add module names to the UI
       function addModuleNames() {
@@ -123,7 +126,7 @@
         // upload the audio to the server
         let formData = new FormData();
         formData.append("file", this.files[0]);
-        fetch("/upload_audio/" + id, {
+        fetch(app_prefix+"/upload_audio/" + id, {
           method: "POST",
           body: formData,   
         })
@@ -135,7 +138,7 @@
                 let message = document.getElementById("message");
                 message.innerHTML = json["message"];
                 
-                fetch("/start_transcription/" + id, {
+                fetch(app_prefix+"/start_transcription/" + id, {
                     method: "POST"
                 })
                 .then(response => response.json())

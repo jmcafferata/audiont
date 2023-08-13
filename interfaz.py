@@ -70,7 +70,7 @@ def upload_file(user_id):
 
 
 # Upload audio to server
-@app.route('/upload_audio', methods=['POST'])
+@app.route(app.config['APPLICATION_ROOT'] + '/upload_audio', methods=['POST'])
 def upload_audio():
     try:
         if 'file' not in request.files:

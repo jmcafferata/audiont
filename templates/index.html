@@ -121,7 +121,7 @@
         // upload the audio to the server
         let formData = new FormData();
         formData.append("file", this.files[0]);
-        fetch("/upload_audio", {
+        fetch("/audiont/upload_audio", {
           method: "POST",
           body: formData,
         })

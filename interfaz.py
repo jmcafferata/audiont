@@ -6,6 +6,7 @@ import config
 import subprocess
 import random
 import openai
+from modules import transcription
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'users/'
@@ -73,9 +74,11 @@ def upload_file(user_id):
 @app.route(app.config['APPLICATION_ROOT'] + '/upload_audio', methods=['POST'])
 def upload_audio():
     try:
+        # Check if the file is present in the request
         if 'file' not in request.files:
             return jsonify({'status': 'error', 'message': 'No file part in the request.'}), 400
         
+        # Get the file from the request
         audio = request.files['file']
         
         # Check if the file is empty
@@ -90,9 +93,11 @@ def upload_audio():
         audio.save(audio.filename)
 
         # Split the audio in chunks of 30 seconds
-        audio_files = split_in_chunks(audio.filename)
-
-        transcription = transcribe_audios(audio_files)
+        audio_files = transcription.split_in_chunks(audio.filename)
+        transcription = transcription.transcribe_audios(audio_files, config.openai_key)
+        # Delete the audio files
+        for file in audio_files:
+            os.remove(file)
 
 
         
@@ -101,50 +106,6 @@ def upload_audio():
         print(e)
         return jsonify({'status': 'error', 'error': str(e)})
 
-
-def split_in_chunks(audio_file):
-    # generate random number from 1 to 1000
-
-    random_number = str(random.randint(1, 1000))
-    output_pattern = random_number+'_temp_output_%03d.mp3'
-    
-    # Construct the ffmpeg command
-    command = ['ffmpeg', '-i', audio_file, '-vn', '-map', '0:a',
-            '-f', 'segment', '-segment_time', '30', '-reset_timestamps', '1', '-b:a','192k',output_pattern]
-
-    try:
-        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # get the list of audio files
-        audio_files = [file for file in os.listdir() if file.startswith(random_number) and file.endswith(".mp3")]
-    except subprocess.CalledProcessError as e:
-        print(f"FFmpeg error:\n{e.stderr.decode('utf-8')}")
-        raise e
-
-    return audio_files
-
-
-def transcribe_audios(audio_files, language="es", prompt=""):
-
-    text = ""
-
-    for audio_file in audio_files:
-        with open(audio_file, "rb") as file:
-            # get the openai api key from openai_api_key.txt
-            with open(app.config['APPLICATION_ROOT'] + '/static/openai_api_key.txt', 'r') as f:
-
-                openai.api_key = f.read()
-            transcription_object = openai.Audio.transcribe(
-                "whisper-1", file, language=language, prompt=prompt
-            )
-            print("Transcription:\n" + transcription_object["text"])
-            text += transcription_object["text"]
-
-    # delete the audio files
-    for file in audio_files:
-        os.remove(file)
-    
-    return text
 
 
 if __name__ == '__main__':

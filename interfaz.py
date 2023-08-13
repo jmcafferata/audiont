@@ -131,7 +131,7 @@ def transcribe_audios(audio_files, language="es", prompt=""):
     for audio_file in audio_files:
         with open(audio_file, "rb") as file:
             # get the openai api key from openai_api_key.txt
-            with open("/static/openai_api_key.txt", "r") as f:
+            with open(app.config['APPLICATION_ROOT'] + '/static/openai_api_key.txt', 'r') as f:
 
                 openai.api_key = f.read()
             transcription_object = openai.Audio.transcribe(

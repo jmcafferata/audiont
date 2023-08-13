@@ -43,7 +43,7 @@ def upload_audio(user_id):
             return jsonify({'status': 'error', 'message': 'No selected file.'}), 400
         
         # Check if the file is an mp3, wav, ogg (name may contain dots)
-        if not audio.filename.lower().endswith(('.mp3', '.wav', '.ogg')):
+        if not audio.filename.lower().endswith(('.mp3', '.wav', '.ogg','.opus','.m4a','.mp4','.oga')):
             return jsonify({'status': 'error', 'message': 'File type not allowed.'}), 400
         
         # Save the audio file to the user's folder

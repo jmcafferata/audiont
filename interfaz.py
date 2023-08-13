@@ -14,11 +14,6 @@ app.config['APPLICATION_ROOT'] = '/'+config.bot_code
 app.secret_key = "your-secret-key"
 
 
-# render index.html
-@app.route(app.config['APPLICATION_ROOT'] + '/')
-def index():
-    return render_template('index.html')
-
 # This code is used to upload a file to a user's folder. It is used in the vectorizar.html file to upload the file. It is also used in the app.py file to save the file in the user's folder.
 @app.route(app.config['APPLICATION_ROOT'] + '/vectorizar/<user_id>', methods=['GET', 'POST'])
 def upload_file(user_id):

@@ -14,3 +14,4 @@ audios.csv
 *.pyc
 chat.csv
 users/
+openai_api_key.txt

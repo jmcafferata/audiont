@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Audion't</title>
+    <link rel="stylesheet" href="static/style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      *,
+      html {
+        margin: 0;
+        padding: 0;
+        font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+      }
+      body {
+        background-color: #d9bfa6;
+      }
+      tr:nth-child(even) {
+        background-color: #dfe3e8;
+      }
+      td {
+        padding: 4px;
+      }
+      #app-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 1200px;
+        margin: auto;
+      }
+
+      #logo {
+        text-align: center;
+        width: 100%;
+        padding: 32px 0 32px 0;
+      }
+      #logo img {
+        max-width: 600px;
+        margin: auto;
+      }
+      .module {
+        border-radius: 5px;
+        padding: 10px;
+        margin: 0px 10px 16px 10px;
+        overflow-x: scroll;
+      }
+      /* remove scrollbar */
+      .module::-webkit-scrollbar {
+        display: none;
+      }
+      .module-name {
+        font-weight: 900;
+        font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+        padding: 0px 0px 12px 4px;
+      }
+      #image-container {
+        overflow: scroll;
+        max-height: 300px;
+        display: none;
+      }
+      table {
+        margin-bottom: 12px;
+      }
+      button {
+        font-size: 14px;
+        padding: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app-container">
+      <div id="logo">
+        <img src="static/audiont.jpg" alt="logo" />
+      </div>
+      <div id="modules">
+        <div class="module" name="Funciones">
+          <!-- Botón de Subir audio-->
+          <button
+            id="upload-btn"
+            onclick="document.getElementById('upload').click()"
+          >
+            Subir audio (mp3, wav, ogg)
+          </button>
+          <input
+            type="file"
+            id="upload"
+            style="display: none;"
+          />
+        <div class="module" name="Transcripción">
+         
+          <!-- Transcription in rich text -->
+            <div id="transcription"></div>
+
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+
+        
+        // Add module names to the UI
+      function addModuleNames() {
+        let modules = document.getElementsByClassName("module");
+        for (let i = 0; i < modules.length; i++) {
+          let name = modules[i].getAttribute("name");
+          let div = document.createElement("div");
+          div.innerHTML = name;
+          div.className = "module-name";
+          modules[i].prepend(div);
+        }
+      }
+
+      // When user adds a file, upload it to the server
+      document.getElementById("upload").addEventListener("change", function () {
+        // check if the file is an image
+        if (!this.files[0].type.match(/audio.*/)) {
+          alert("No es un audio");
+          return;
+        }
+        // upload the audio to the server
+        let formData = new FormData();
+        formData.append("file", this.files[0]);
+        fetch("/upload_audio", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((json) => {
+            //print the response
+            if (json["status"] == "success") {
+                // show in transcription div
+                document.getElementById("transcription").innerHTML = json["message"];
+            } else {
+                alert(json["message"]);
+            }
+          });
+      });
+
+    </script>
+  </body>
+</html>

@@ -21,43 +21,17 @@ from telegram.ext import (
 )
 # library used to handle conversations // librería usada para manejar conversaciones
 from telegram.ext import ConversationHandler
-# import the clean_options file // importar el archivo clean_options
-import modules.clean_options as clean
-import re  # library used to handle regular expressions // librería usada para manejar expresiones regulares
-# library used to handle dates // librería usada para manejar fechas
-from datetime import datetime
 import csv  # library used to handle csv files // librería usada para manejar archivos csv
 import config as config  # import the config file // importar el archivo de configuración
 # library used to communicate with the Telegram bot // librería usada para comunicarse con el bot de Telegram
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
-# import the decode_utf8 file // importar el archivo decode_utf8
-import modules.decode_utf8
-# import the convert_to_wav file // importar el archivo convert_to_wav
-import modules.convert_to_wav
 # import the store_to_csv file // importar el archivo store_to_csv
 import modules.csv_manipulation as csvm
 # import the ai_functions file // importar el archivo ai_functions
 import modules.ai_functions as ai
-from pathlib import Path
-import requests
-import pytz
-import urllib.request
 import telegram.constants
-import logging
-import requests
-from bs4 import BeautifulSoup
-import openai
-import sys
-import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-from openai.embeddings_utils import get_embedding
-from openai.embeddings_utils import cosine_similarity
 import traceback
-import json
-from telegram.constants import ParseMode
 from flask import Flask, request, redirect, url_for, flash
-from werkzeug.utils import secure_filename
 import os
 from modules.settings_system import check_user_folder, get_settings, write_settings
 

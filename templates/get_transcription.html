@@ -3,70 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <title>Audion't</title>
-    <link rel="stylesheet" href="static/style.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/audiont/static/style.css" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <style>
-      *,
-      html {
-        margin: 0;
-        padding: 0;
-        font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
-      }
-      body {
-        background-color: #d9bfa6;
-      }
-      tr:nth-child(even) {
-        background-color: #dfe3e8;
-      }
-      td {
-        padding: 4px;
-      }
-      #app-container {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        max-width: 1200px;
-        margin: auto;
-      }
-
-      #logo {
-        text-align: center;
-        width: 100%;
-        padding: 32px 0 32px 0;
-      }
-      #logo img {
-        max-width: 600px;
-        margin: auto;
-      }
-      .module {
-        border-radius: 5px;
-        padding: 10px;
-        margin: 0px 10px 16px 10px;
-        overflow-x: scroll;
-      }
-      /* remove scrollbar */
-      .module::-webkit-scrollbar {
-        display: none;
-      }
-      .module-name {
-        font-weight: 900;
-        font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
-        padding: 0px 0px 12px 4px;
-      }
-      #image-container {
-        overflow: scroll;
-        max-height: 300px;
-        display: none;
-      }
-      table {
-        margin-bottom: 12px;
-      }
-      button {
-        font-size: 14px;
-        padding: 4px;
-      }
-    </style>
   </head>
   <body>
     <div id="app-container">
@@ -80,8 +19,10 @@
               <p>{{ transcription_text }}</p>
             </div>
             <!-- Button to download txt file with text-->
-            <button onclick="downloadTxtFile()">Descargar</button>
-
+            <button id="download" onclick="downloadTxtFile()">Descargar</button>
+            
+            <!-- Button to reload the page -->
+            <button id="reload" onclick="location.reload()">Refrescar</button>
         </div>
       </div>
     </div>
@@ -89,6 +30,16 @@
     <script type="text/javascript">
 
       var transcription_text = "{{ transcription_text }}";
+      var is_ready = "{{ is_ready }}";
+
+      // if ready, hide reload button
+      if (is_ready == "True") {
+        document.getElementById("reload").style.display = "none";
+      } else {
+        document.getElementById("download").style.display = "none";
+      }
+
+
 
       function downloadTxtFile() {
         var element = document.createElement("a");

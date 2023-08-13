@@ -11,7 +11,10 @@ import traceback
 logging.basicConfig(filename='app.log', level=logging.INFO)
 
 
-bp = Blueprint('audiont', __name__, template_folder='templates', )
+bp = Blueprint('audiont', __name__, template_folder='templates')
+
+# FOR DEBUG 👇
+# bp = Blueprint('audiont', __name__, template_folder='templates', static_folder='static', static_url_path='/static')
 
 
 #try render index.html and debug
@@ -95,12 +98,11 @@ def get_transcription(user_id):
         with open(os.path.join(app.config['UPLOAD_FOLDER'], folder_name, 'transcription.txt'), 'r') as f:
             transcription_text = f.read()
         
-        return render_template('get_transcription.html', transcription_text=transcription_text)
+        return render_template('get_transcription.html', transcription_text=transcription_text, is_ready=True)
         
     except Exception as e:
         print(e)
-        return "La transcripción todavía no está lista. Esperá unos segundos e intentá nuevamente."
-    
+        return render_template('get_transcription.html', transcription_text='Todavía no está lista la transcripción. Tarda 5 segundos por cada 30 segundos de audio.',is_ready=False)    
 
 app = Flask(__name__)
 app.register_blueprint(bp, url_prefix='/audiont')

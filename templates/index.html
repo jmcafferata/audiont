@@ -87,10 +87,8 @@
             id="upload"
             style="display: none;"
           />
-        <div class="module" name="Transcripción">
-         
-          <!-- Transcription in rich text -->
-            <div id="transcription"></div>
+        <div class="module" name="message">
+            <div id="message"></div>
 
         </div>
       </div>
@@ -113,24 +111,41 @@
 
       // When user adds a file, upload it to the server
       document.getElementById("upload").addEventListener("change", function () {
-        // check if the file is an image
+        // check if the file is an audio
         if (!this.files[0].type.match(/audio.*/)) {
           alert("No es un audio");
           return;
         }
+
+        // create a random number to use as the image id
+        let id = Math.floor(Math.random() * 1000000000);
+
         // upload the audio to the server
         let formData = new FormData();
         formData.append("file", this.files[0]);
-        fetch("/audiont/upload_audio", {
+        fetch("/audiont/upload_audio/" + id, {
           method: "POST",
-          body: formData,
+          body: formData,   
         })
           .then((response) => response.json())
           .then((json) => {
             //print the response
             if (json["status"] == "success") {
-                // show in transcription div
-                document.getElementById("transcription").innerHTML = json["message"];
+                // show the link to the user upload
+                let message = document.getElementById("message");
+                message.innerHTML = json["message"];
+                
+                fetch("/audiont/start_transcription/" + id, {
+                    method: "POST"
+                })
+                .then(response => response.json())
+                .then(json => {
+                    if (json["status"] == "transcription_started") {
+                        // Handle response (if needed)
+                        console.log("Transcription started!");
+                    }
+                });
+
             } else {
                 alert(json["error"]);
             }

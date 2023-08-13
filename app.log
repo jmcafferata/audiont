@@ -1,0 +1,61 @@
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://localhost:8000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:03:23] "[33mGET / HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:03:23] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:03:26] "[32mGET /audiont HTTP/1.1[0m" 308 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:03:26] "GET /audiont/ HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:03:26] "[33mGET /audiont/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:03:27] "[33mGET /audiont/static/audiont.jpg HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:03:35] "[33mGET /audiont/static/style.css HTTP/1.1[0m" 404 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:03:38] "GET /audiont/ HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:03:38] "[33mGET /audiont/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:03:38] "[33mGET /audiont/static/audiont.jpg HTTP/1.1[0m" 404 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://localhost:8000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:05:43] "GET /audiont/ HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:05:43] "[33mGET /audiont/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:05:43] "[33mGET /audiont/static/audiont.jpg HTTP/1.1[0m" 404 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:05:47] "GET /audiont/ HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:05:47] "[33mGET /audiont/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:05:48] "[33mGET /audiont/static/audiont.jpg HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:05:48] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:08:26] "[33mGET / HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:08:26] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:08:36] "[32mGET /audiont HTTP/1.1[0m" 308 -
+INFO:interfaz:Index route accessed
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:08:36] "GET /audiont/ HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:08:36] "[33mGET /audiont/static/style.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:08:36] "[33mGET /audiont/static/audiont.jpg HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [13/Aug/2023 17:08:45] "POST /audiont/upload_audio/789552134 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'g:\\My Drive\\Personal\\jmcafferata.com\\ai\\audiont\\interfaz.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 497-900-972

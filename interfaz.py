@@ -94,7 +94,7 @@ def upload_audio():
 
         # Split the audio in chunks of 30 seconds
         audio_files = transcription.split_in_chunks(audio.filename)
-        transcription_text = transcription.transcribe_audios(audio_files, config.openai_api_key)
+        transcription_text = transcription.transcribe_audios(audio_files, api_key=config.openai_api_key)
         # Delete the audio files
         for file in audio_files:
             os.remove(file)

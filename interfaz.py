@@ -6,7 +6,7 @@ import config
 import subprocess
 import random
 import openai
-from modules import transcription
+import modules.transcription as transcription
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'users/'
@@ -94,14 +94,14 @@ def upload_audio():
 
         # Split the audio in chunks of 30 seconds
         audio_files = transcription.split_in_chunks(audio.filename)
-        transcription = transcription.transcribe_audios(audio_files, config.openai_key)
+        transcription_text = transcription.transcribe_audios(audio_files, config.openai_key)
         # Delete the audio files
         for file in audio_files:
             os.remove(file)
 
 
         
-        return jsonify({'status': 'success', 'message': transcription})
+        return jsonify({'status': 'success', 'message': transcription_text})
     except Exception as e:
         print(e)
         return jsonify({'status': 'error', 'error': str(e)})

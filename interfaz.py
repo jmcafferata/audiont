@@ -11,10 +11,10 @@ import traceback
 logging.basicConfig(filename='app.log', level=logging.INFO)
 
 
-bp = Blueprint('audiont', __name__, template_folder='templates')
+# bp = Blueprint('audiont', __name__, template_folder='templates')
 
 # FOR DEBUG 👇
-# bp = Blueprint('audiont', __name__, template_folder='templates', static_folder='static', static_url_path='/static')
+bp = Blueprint('audiont', __name__, template_folder='templates', static_folder='static', static_url_path='/static')
 
 
 #try render index.html and debug

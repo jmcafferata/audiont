@@ -61,6 +61,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     check_user_folder(update.message.from_user.id)
 
+    
     await update.message.chat.send_chat_action(action=telegram.constants.ChatAction.TYPING)
 
     try:

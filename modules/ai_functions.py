@@ -436,22 +436,23 @@ async def perform_action(intent, entities, message,update):
         else:
             full_name = update.message.from_user.full_name
         
-        #embed and store the message in db/messages.csv
+        #embed and store the message in users/userid/messages.csv
+
         message_vector = get_embedding(message, 'text-embedding-ada-002')
         
-        #check if global/messages.csv exists. if not, create it
-        if not os.path.exists('users/global/messages.csv'):
-            with open('users/global/messages.csv', 'w', encoding='utf-8') as f:
-                f.write('date|full_name|message|embedding\n')
-        with open('users/global/messages.csv', 'a', encoding='utf-8') as f:
-            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message+'|'+str(message_vector)+'\n')
+        #check if csv exists. if not, create it
+        if not os.path.exists('users/'+str(update.message.from_user.id)+'/messages.csv'):
+            with open('users/'+str(update.message.from_user.id)+'/messages.csv', 'w', encoding='utf-8') as f:
+                f.write('date|message|embedding\n')
+        with open('users/'+str(update.message.from_user.id)+'/messages.csv', 'a', encoding='utf-8') as f:
+            f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+message+'|'+str(message_vector)+'\n')
         await update.message.reply_text('✍️ ¡Anotado!')
 
     ######################### MESSAGESEARCH #########################
     elif intent.startswith('messagesearch'):
         await update.message.reply_text('🔍 Buscando en anotaciones...')
-        # get the 'users/global/messages.csv' and find the most similar messages
-        messages_file = 'users/global/messages.csv'
+        # get the user folder called users/id/messages.csv
+        messages_file = 'users/'+str(update.message.from_user.id)+'/messages.csv'
         top_n = 5
         similar_messages = get_top_entries(messages_file,message,top_n)
         print("################ similar_messages ############\n", similar_messages)
@@ -700,6 +701,8 @@ async def chat(update,message,model):
 
     # check what the user wants
     intent = await understand_intent(update, message)
+
+    print("intent: \n", intent)
 
     # TODO: get the entities from the message
     entities = await extract_entities(update)

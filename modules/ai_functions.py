@@ -161,13 +161,15 @@ async def understand_intent(update, message):
                     {"role": "system", "content": """based on the user input, the available functions and available documents, you will respond with the name of the function to execute. if you don't know, respond "chat"
 
 available_functions=[
+{"function":"calendar","description":"for accessing the user's calendar","example_user_messages":["mostrame mi calendario","qué eventos tengo mañana?"},                     
 {"function":"chat","default":"true","fallback":"true","description":"for chatting with the AI chatbot","example_user_message":"hola! todo bien?"},
 {"function":"docusearch","description":"for looking up relevant information in one of the user documents, based on the available_documents","example_user_message":"buscar los efectos de la microdosis en el libro de Hoffman"},
 {"function":"scrape","description":"for scraping the internet for additional data","example_user_message":"buscar en cledara.com los features de Cledara"},
 {"function":"messagesearch","description":"for looking up relevant information in previous related messages","example_user_message":"buscar en mensajes anteriores un presupuesto de baño"},
 {"function":"messagestore","description":"for logging messages","example_user_message":"anotar que un pancho cuesta cinco dólares"},
-{"function":"personality","description":"for changing the personality of the AI chatbot","example_user_message":"cambiar la personalidad a la de un abogado"},
+{"function":"personality","description":"for changing the personality of the AI chatbot","example_user_message":"cambiá tu personalidad a la de un abogado"},
 {"function":"vocabulary","description":"for changing the vocabulary of the AI chatbot","example_user_message":"agregar las siguientes palabras al vocabulario: 'schadenfreude', 'watafak', 'papafrita'"},    
+
 ]
 
 available_documents=""" + str(jsons) + """
@@ -238,10 +240,6 @@ async def perform_action(intent, entities, message,update):
         print('############ CHAT RESPONSE ############')
         print(response_string)
         await typing_message.edit_text(response_string)
-
-
-
-    
 
     ######################### DOCUSEARCH #########################
     elif intent.startswith('docusearch'):
@@ -417,7 +415,6 @@ async def perform_action(intent, entities, message,update):
         await typing_message.edit_text(response_string)
 
     ######################### MESSAGESTORE #########################
-
     elif intent.startswith('messagestore'):
 
         now = datetime.now()
@@ -512,6 +509,24 @@ async def perform_action(intent, entities, message,update):
         await update.message.reply_text(new_vocabulary_text)
 
         prompt_messages.append({"role": "user", "content": new_vocabulary_text})
+
+    ######################### CALENDAR #########################
+    elif intent.startswith('calendar'):
+        await update.message.reply_text('📅Buscando en el calendario...')
+        from modules.google_calendar import get_events
+        events = get_events(update.message.from_user.id)
+        response = openai.ChatCompletion.create(
+            model=model,
+            temperature=0.2,
+            messages=[
+                
+                {"role":"user","content":"Estos son mis eventos:\n"},
+                {"role":"user","content": events},
+                {"role":"user","content":"En base a los mejores anteriores, responder la siguiente pregunta: \n" + message},
+            ])
+        response_string = response.choices[0].message.content
+        print("################ response_string ############\n", response_string)
+        await update.message.reply_text(response_string)
 
     for prompt_message in prompt_messages:
         # print the message

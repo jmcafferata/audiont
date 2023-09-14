@@ -19,3 +19,5 @@ main.py
 uploads/
 tmp/
 /app.log
+calendar_credentials.json
+token.json

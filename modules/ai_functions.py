@@ -512,9 +512,22 @@ async def perform_action(intent, entities, message,update):
 
     ######################### CALENDAR #########################
     elif intent.startswith('calendar'):
+
+        events = '' 
         await update.message.reply_text('📅Buscando en el calendario...')
         from modules.google_calendar import get_events
-        events = get_events(update.message.from_user.id)
+        from modules.google_calendar import check_auth
+        from modules.google_calendar import get_auth_url
+
+        # check if the user has authorized the app
+        if not check_auth(update.message.from_user.id):
+            # if not, send the auth url
+            await update.message.reply_text('🔐 Necesito que me autorices para acceder a tu calendario. Por favor, hacé click en el siguiente link y seguí las instrucciones:\n\n' + get_auth_url(update.message.from_user.id))
+            return
+        else:
+            # if yes, get the events
+            events = get_events(update.message.from_user.id)
+
         response = openai.ChatCompletion.create(
             model=model,
             temperature=0.2,
@@ -523,6 +536,7 @@ async def perform_action(intent, entities, message,update):
                 {"role":"user","content":"Estos son mis eventos:\n"},
                 {"role":"user","content": events},
                 {"role":"user","content":"En base a los mejores anteriores, responder la siguiente pregunta: \n" + message},
+
             ])
         response_string = response.choices[0].message.content
         print("################ response_string ############\n", response_string)

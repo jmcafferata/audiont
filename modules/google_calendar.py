@@ -9,7 +9,22 @@ from googleapiclient.errors import HttpError
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
-def get_events(uid):
+def check_auth(uid):
+    creds = None
+
+    uid = str(uid)
+
+    if os.path.exists('users/' + uid + '/token.json'):
+        creds = Credentials.from_authorized_user_file('users/' + uid + '/token.json', SCOPES)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            return False     
+    return True
+
+def get_auth_url(uid):
     creds = None
 
     uid = str(uid)
@@ -24,10 +39,20 @@ def get_events(uid):
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
                 'calendar_credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
+            # generate a link to get the token
+            auth_url, _ = flow.authorization_url(prompt='consent')
 
-        with open('users/' + uid + '/token.json', 'w') as token:
-            token.write(creds.to_json())
+
+            return(format(auth_url))
+
+
+def get_events(uid):
+    creds = None
+
+    uid = str(uid)
+
+    if os.path.exists('users/' + uid + '/token.json'):
+        creds = Credentials.from_authorized_user_file('users/' + uid + '/token.json', SCOPES)
 
     try:
         service = build('calendar', 'v3', credentials=creds)

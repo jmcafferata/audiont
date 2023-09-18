@@ -13,10 +13,10 @@ slack_event_adapter = SlackEventAdapter(os.environ['SIGNING_SECRET'], '/slack/ev
 
 client = slack.WebClient(token=os.environ['SLACK_TOKEN'])
 
-client.chat_postMessage(channel='#random-gpt4-content-for-inspiration', text="""
+client.chat_postMessage(channel='#bot-test', text="""
 🔪🚫
 """
 )
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5020)

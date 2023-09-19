@@ -8,6 +8,14 @@ import openai
 import json
 import ast
 import config
+from openai.embeddings_utils import get_embedding, cosine_similarity
+from ast import literal_eval
+import numpy as np
+
+
+
+import pandas as pd
+
 
 env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -20,6 +28,85 @@ client = slack.WebClient(token=os.environ['SLACK_TOKEN'])
 openai.api_key = config.openai_api_key
 
 BOT_ID = client.api_call("auth.test")['user_id']
+
+def check_and_compute_cosine_similarity(x, message_vector):
+    try:
+        x = np.array(literal_eval(x), dtype=np.float64)  # Convert x to float64
+    except ValueError:
+        print("ValueError: could not convert string to float: '{}'".format(x))
+        return 0.0
+    except SyntaxError:
+        print("SyntaxError: invalid syntax")
+        return 0.0
+    except TypeError:
+        print("TypeError: can't convert {} to float".format(type(x)))
+        return 0.0
+    except Exception as e:
+        print("Exception: {}".format(e))
+        return 0.0
+
+
+   
+    return cosine_similarity(x, message_vector)
+
+
+def get_json_top_entries(query, database_name, top_n=5):
+   
+    # read the output.json file
+    with open(database_name, 'r', encoding='utf-8') as f:
+        data = f.read()
+
+    # convert the json string to a list of dictionaries
+    data = json.loads(data)
+
+    # create a dataframe with the data
+    df = pd.DataFrame(data)
+
+    # create a new column with the embeddings converted to string
+    df['embedding'] = df['embedding'].apply(lambda x: str(x))
+
+    # add original index to dataframe before sorting
+    df['original_index'] = df.index
+
+    mensajes_sim = df[['filename','metadata', 'text_chunk', 'embedding', 'original_index']].copy()
+    print('mensajes_sim: ', mensajes_sim)
+
+    message_vector = get_embedding(query, 'text-embedding-ada-002')
+
+    # Calculate cosine similarity between the message vector and the vectors in the output.json
+    mensajes_sim['similarity'] = mensajes_sim['embedding'].apply(lambda x: check_and_compute_cosine_similarity(x, message_vector))
+    print('similarity: ', mensajes_sim['similarity'])
+
+    # sort by similarity
+    mensajes_sim = mensajes_sim.sort_values(by=['similarity'], ascending=False)
+    print('mensajes_sim: ', mensajes_sim)
+    
+    related_data = ''
+
+    for index, row in mensajes_sim[['metadata', 'text_chunk', 'original_index']].head(top_n).iterrows():
+        related_chunk = ''
+        # get adjacent chunks
+        original_index = row['original_index']
+        if original_index > 0:
+            prev_row = df.loc[original_index - 1]
+            related_chunk += str(prev_row['metadata']) + ' - ' + str(prev_row['text_chunk']) + ' (Previous chunk)\n\n'
+        
+        related_chunk += str(row['metadata']) + ' - ' + str(row['text_chunk']) + '\n\n'
+
+        if original_index < len(df) - 1:
+            next_row = df.loc[original_index + 1]
+            related_chunk += str(next_row['metadata']) + ' - ' + str(next_row['text_chunk']) + ' (Next chunk)\n\n'
+        
+        print('related_chunk: ', related_chunk)
+        # if update:
+        #     # trim the chunk to 4000 characters
+        #     if len(related_chunk) > 4000:
+        #         related_chunk = related_chunk[:4000] + '...'
+        #     await update.message.reply_text('👓 Data relacionada...👇\n\n' + related_chunk)
+        related_data += related_chunk
+
+    return related_data
+
 
 def understand_intent(text):
     global_jsons = [f for f in os.listdir('db') if f.endswith('.json')]
@@ -115,12 +202,23 @@ def generate_response(intent,entities,text):
                 file = file + '.json'
             # if file is json
             if file.endswith('.json'):
+                # if file is customer_stories.json
+                if file == 'db/customer_stories.json':
+                    top_n = 2
+                    relevant = get_json_top_entries(text, file, top_n)
+                    relevant_text += relevant
+
+                # truncate the final_similar_entries to 5000 characters
+                relevant_text = relevant_text[:8000]
                 # add the data in text_chunks to the relevant_text
                 with open(file,encoding='utf-8') as json_file:
                     data = json.load(json_file)
                     #get text_chunks on each json object in the file   
                     for item in data:
                         relevant_text = relevant_text + item['text_chunk']
+                        # truncate the relevant_text to 5000 characters
+                        relevant_text = relevant_text[:8000]
+
 
         prompt_messages = []
 
@@ -180,7 +278,7 @@ def message(payload):
         
 
 # TEST
-# text = "how to add a new app"
+# text = "find a customer story (only customer stories) about IT security and create an email for a banker."
 # intent = understand_intent(text)
 # entities = extract_entities(text)
 # response = generate_response(intent,entities,text)

@@ -79,3 +79,11 @@ def split_text_into_segments(text: str,language: str) -> List[str]:
   sentences = split_sentences(text,nlp)
   print('sentences: ',len(sentences))
   return group_sentences_semantically(sentences, 0.3,nlp)
+
+
+import pandas as pd
+import os
+
+csv_file = 'data.csv'
+df = pd.read_csv(csv_file)
+print(df.head())

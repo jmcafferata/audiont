@@ -1,0 +1,11 @@
+available_functions=[
+{"function":"calendar","description":"for accessing the user's calendar","example_user_messages":["mostrame mi calendario","qué eventos tengo mañana?"},                     
+{"function":"chat","default":"true","fallback":"true","description":"for chatting with the AI chatbot","example_user_message":"hola! todo bien?"},
+{"function":"docusearch","description":"for looking up relevant information in one of the user documents, based on the available_documents","example_user_message":"buscar los efectos de la microdosis en el libro de Hoffman"},
+{"function":"scrape","description":"for scraping the internet for additional data","example_user_message":"buscar en cledara.com los features de Cledara"},
+{"function":"messagesearch","description":"for looking up relevant information in previous related messages","example_user_message":"buscar en mensajes anteriores un presupuesto de baño"},
+{"function":"messagestore","description":"for logging messages","example_user_message":"anotar que un pancho cuesta cinco dólares"},
+{"function":"personality","description":"for changing the personality of the AI chatbot","example_user_message":"cambiá tu personalidad a la de un abogado"},
+{"function":"vocabulary","description":"for changing the vocabulary of the AI chatbot","example_user_message":"agregar las siguientes palabras al vocabulario: 'schadenfreude', 'watafak', 'papafrita'"},    
+
+]

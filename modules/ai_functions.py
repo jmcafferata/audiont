@@ -145,14 +145,17 @@ async def understand_intent(update, message):
     
     prompt = []
     # get model from settings
-    model = get_settings('GPTversion', update.message.from_user.id)
+    if update != None:
+        model = get_settings('GPTversion', update.message.from_user.id)
+    else:
+        model = 'gpt-4'
 
-    # get global json documents from the users/global folder only if they are JSONs
-    global_jsons = [f for f in os.listdir('users/global/vectorized') if f.endswith('.json')]
+    # get global json documents from the db folder only if they are JSONs
+    global_jsons = [f for f in os.listdir('db') if f.endswith('.json')]
     # get the json documents from the user's folder
-    user_jsons = [f for f in os.listdir('users/' + str(update.message.from_user.id) + '/vectorized') if f.endswith('.json')]
+    #user_jsons = [f for f in os.listdir('users/' + str(update.message.from_user.id) + '/vectorized') if f.endswith('.json')]
     # combine the two lists // combinar las dos listas
-    jsons = global_jsons + user_jsons
+    #jsons = global_jsons + user_jsons
 
     intent_response = openai.ChatCompletion.create(
                 model=model,
@@ -161,18 +164,12 @@ async def understand_intent(update, message):
                     {"role": "system", "content": """based on the user input, the available functions and available documents, you will respond with the name of the function to execute. if you don't know, respond "chat"
 
 available_functions=[
-{"function":"calendar","description":"for accessing the user's calendar","example_user_messages":["mostrame mi calendario","qué eventos tengo mañana?"},                     
 {"function":"chat","default":"true","fallback":"true","description":"for chatting with the AI chatbot","example_user_message":"hola! todo bien?"},
-{"function":"docusearch","description":"for looking up relevant information in one of the user documents, based on the available_documents","example_user_message":"buscar los efectos de la microdosis en el libro de Hoffman"},
-{"function":"scrape","description":"for scraping the internet for additional data","example_user_message":"buscar en cledara.com los features de Cledara"},
-{"function":"messagesearch","description":"for looking up relevant information in previous related messages","example_user_message":"buscar en mensajes anteriores un presupuesto de baño"},
-{"function":"messagestore","description":"for logging messages","example_user_message":"anotar que un pancho cuesta cinco dólares"},
-{"function":"personality","description":"for changing the personality of the AI chatbot","example_user_message":"cambiá tu personalidad a la de un abogado"},
-{"function":"vocabulary","description":"for changing the vocabulary of the AI chatbot","example_user_message":"agregar las siguientes palabras al vocabulario: 'schadenfreude', 'watafak', 'papafrita'"},    
+{"function":"docusearch","description":"for looking up relevant information in one of the documents, based on the available_documents","example_user_messages":["how to add an application in cledara","get me a customer story about finance","what can cledara do"]},
 
 ]
 
-available_documents=""" + str(jsons) + """
+available_documents=""" + str(global_jsons) + """
 
 ###
 
@@ -186,11 +183,11 @@ Assistant: <function>"""},
     print("intent: \n", intent)
     return intent
 
-async def extract_entities(message):
+async def extract_entities(intent,message):
     entities = None
     return entities
 
-async def perform_action(intent, entities, message,update):
+async def perform_action(intent, entities, message,update,platform='telegram'):
 
     now = datetime.now(timezone)
  
@@ -717,16 +714,14 @@ async def generate_prompt_completion_pair(user_id):
 
 async def chat(update,message,model):
 
-    uid = update.message.from_user.id
+    if update != None:
+        uid = update.message.from_user.id
 
     # if users/global folder doesn't exist, create it
     if not os.path.exists('users/global'):
         os.makedirs('users/global')
 
-
     now = datetime.now()
-
-  
 
     # check what the user wants
     intent = await understand_intent(update, message)

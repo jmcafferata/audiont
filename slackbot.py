@@ -147,13 +147,23 @@ def generate_response(intent,entities,text):
 
 @slack_event_adapter.on('message')
 def message(payload):
+    print(payload)
     event = payload.get('event', {})
     channel_id = event.get('channel')
     user_id = event.get('user')
     text = event.get('text')
+    ts = event.get('ts')
+
+    
 
     
     if BOT_ID != user_id and BOT_ID in text:
+        #react to the message
+        client.reactions_add(
+            channel=channel_id,
+            name="searching",
+            timestamp=ts
+    )
         # get user intent
         intent = understand_intent(text)
 
@@ -163,7 +173,10 @@ def message(payload):
 
         response = generate_response(intent,entities,text)
 
-        client.chat_postMessage(channel=channel_id, text=response)
+        client.chat_postMessage(channel=channel_id, text=response,)
+
+
+
         
 
 # TEST

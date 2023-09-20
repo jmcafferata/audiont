@@ -222,10 +222,10 @@ def generate_response(intent,entities,text):
 
         prompt_messages = []
 
+        # append the message
+        prompt_messages.append({"role": "user", "content": text + "\nUse the following data as context to generate a response: "})
         prompt_messages.append({"role": "user", "content": relevant_text})
         
-        # append the message
-        prompt_messages.append({"role": "user", "content": text})
 
         #for each prompt message, print
         for prompt_message in prompt_messages:

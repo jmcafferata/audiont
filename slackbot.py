@@ -175,7 +175,7 @@ def generate_response(intent,entities,text):
                 Available documents: ["Introduction to Renewable Energy.pdf.json", "Fossil Fuels and Climate Change.pdf.json", "Solar and Wind Power.pdf.json", "Nuclear Energy Pros and Cons.pdf.json", "Sustainable Energy Solutions.pdf.json", "The Future of Oil.pdf.json"]
 
                 LLM: ['db/Introduction to Renewable Energy.pdf.json', 'db/Solar and Wind Power.pdf.json', 'db/Sustainable Energy Solutions.pdf.json']"""},
-                {"role": "user", "content": "Search query: " + text + "\nAvailable documents: " + str(files) + "\n\nLLM: ['"}
+                {"role": "user", "content": "Search query: " + text + "\nAvailable documents: " + str(files) + "\n\nLLM: ["}
 
             ]
         )
@@ -183,7 +183,7 @@ def generate_response(intent,entities,text):
         print("################ relevant files for the query ############", docusearch_response.choices[0].message.content)
 
         # add the bracket so it's an array
-        docusearch_response = "['" + docusearch_response.choices[0].message.content
+        docusearch_response = "[" + docusearch_response.choices[0].message.content
 
         # get the text up until the first '] including the ']'
         docusearch_response = docusearch_response[:docusearch_response.find(']')+1]
@@ -278,7 +278,7 @@ def message(payload):
         
 
 # TEST
-# text = "find a customer story (only customer stories) about IT security and create an email for a banker."
+# text = "look up in customer stories a use case for Cledara in the health industry. include details."
 # intent = understand_intent(text)
 # entities = extract_entities(text)
 # response = generate_response(intent,entities,text)

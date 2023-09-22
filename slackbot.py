@@ -2,7 +2,8 @@ import slack
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from flask import Flask
+from threading import Thread
+from flask import Flask, jsonify
 from slackeventsapi import SlackEventAdapter
 import openai
 import json
@@ -11,6 +12,7 @@ import config
 from openai.embeddings_utils import get_embedding, cosine_similarity
 from ast import literal_eval
 import numpy as np
+import json
 
 
 
@@ -260,46 +262,59 @@ You are Cledara Bot. You provide information about Cledara. If someone asks a qu
 
 
 
+# @slack_event_adapter.on('message')
+# def message(payload):
+#     print(payload)
+#     event = payload.get('event', {})
+#     channel_id = event.get('channel')
+#     user_id = event.get('user')
+#     text = event.get('text')
+#     ts = event.get('ts')
+    
+#     if BOT_ID != user_id and BOT_ID in text:
+        
+#         # get user intent
+#         intent = understand_intent(text)
+
+#         # extract entities
+#         entities = extract_entities(text)
+#         # generate response
+
+#         response = generate_response(intent,entities,text)
+
+#         client.chat_postMessage(channel=channel_id, text=response,thread_ts=ts)
+        
+
+app = Flask(__name__)
+
 @slack_event_adapter.on('message')
 def message(payload):
+    # Start a new thread to handle the logic
+    Thread(target=process_message, args=(payload,)).start()
+
+    # Acknowledge the event after starting the thread
+    return jsonify({'status': 'received'}), 200
+
+def process_message(payload):
     print(payload)
     event = payload.get('event', {})
     channel_id = event.get('channel')
     user_id = event.get('user')
     text = event.get('text')
     ts = event.get('ts')
-
-    
-
     
     if BOT_ID != user_id and BOT_ID in text:
-        #react to the message
-        client.reactions_add(
-            channel=channel_id,
-            name="searching",
-            timestamp=ts
-    )
         # get user intent
         intent = understand_intent(text)
 
         # extract entities
         entities = extract_entities(text)
+        
         # generate response
+        response = generate_response(intent, entities, text)
 
-        response = generate_response(intent,entities,text)
-
-        client.chat_postMessage(channel=channel_id, text=response,thread_ts=ts)
-
-        client.reactions_remove(
-            channel=channel_id,
-            name="searching",
-            timestamp=ts
-    )
-        
-
-
-
-        
+        client.chat_postMessage(channel=channel_id, text=response, thread_ts=ts)
+    
 
 # TEST
 # text = "@Cledara Bot i want to do a quarterly review of my software stack. what process should i follow?"

@@ -269,14 +269,14 @@ def message(payload):
     text = event.get('text')
     ts = event.get('ts')
 
-    # send a reaction to the message
-    client.reactions_add(
-        channel=channel_id,
-        name="robot_face",
-        timestamp=ts
-    )
     
     if BOT_ID != user_id and BOT_ID in text:
+        # send a reaction to the message
+        client.reactions_add(
+            channel=channel_id,
+            name="robot_face",
+            timestamp=ts
+        )
         
         # get user intent
         intent = understand_intent(text)

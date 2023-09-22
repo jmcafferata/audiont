@@ -288,7 +288,7 @@ def message(payload):
 
         response = generate_response(intent,entities,text)
 
-        client.chat_postMessage(channel=channel_id, text=response,)
+        client.chat_postMessage(channel=channel_id, text=response,thread_ts=ts)
 
 
 

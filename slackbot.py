@@ -290,6 +290,13 @@ def message(payload):
 
         client.chat_postMessage(channel=channel_id, text=response,thread_ts=ts)
 
+        client.reactions_remove(
+            channel=channel_id,
+            name="searching",
+            timestamp=ts
+    )
+        
+
 
 
         

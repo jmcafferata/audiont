@@ -110,6 +110,7 @@ def get_json_top_entries(query, database_name, top_n=5):
 
 def understand_intent(text):
     global_jsons = [f for f in os.listdir('db') if f.endswith('.json')]
+    
     intent_response = openai.ChatCompletion.create(
                 model='gpt-4',
                 temperature=0.5,
@@ -241,6 +242,22 @@ def generate_response(intent,entities,text):
         print("################ response_string ############", response_string)
 
         return response_string
+    
+    elif intent.startswith('chat'):
+
+        chat_response = openai.ChatCompletion.create(
+            model='gpt-4',
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": """
+You are Cledara Bot. You provide information about Cledara. If someone asks a question that you don't know, say that you don't know and refer the user to support@cledara.com, or the website cledara.com. Your writing style is kind, affectionate and you use emojis.
+"""},
+                {"role": "user", "content": text}
+
+            ]
+        )
+        return chat_response.choices[0].message.content
+
 
 
 @slack_event_adapter.on('message')
@@ -278,7 +295,7 @@ def message(payload):
         
 
 # TEST
-# text = "look up in customer stories a use case for Cledara in the health industry. include details."
+# text = "@Cledara Bot i want to do a quarterly review of my software stack. what process should i follow?"
 # intent = understand_intent(text)
 # entities = extract_entities(text)
 # response = generate_response(intent,entities,text)

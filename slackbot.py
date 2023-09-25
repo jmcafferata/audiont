@@ -11,7 +11,9 @@ import config
 from openai.embeddings_utils import get_embedding, cosine_similarity
 from ast import literal_eval
 import numpy as np
-
+from bs4 import BeautifulSoup
+import tiktoken
+import requests
 
 
 import pandas as pd
@@ -121,6 +123,8 @@ def understand_intent(text):
                     available_functions=[
                     {"function":"chat","default":"true","fallback":"true","description":"for chatting with the AI chatbot","example_user_message":"hola! todo bien?"},
                     {"function":"docusearch","description":"for looking up relevant information in one of the documents, based on the available_documents","example_user_messages":["how to add an application in cledara","get me a customer story about finance","what can cledara do"]},
+                     {"function":"scrape","description":"for scraping the internet for additional data","example_user_message":"buscar en cledara.com los features de Cledara"},
+
 
                     ]
 
@@ -258,6 +262,75 @@ You are Cledara Bot. You provide information about Cledara. If someone asks a qu
         )
         return chat_response.choices[0].message.content
 
+    elif intent.startswith('scrape'):
+
+        #use chatgpt to extract the links from the message
+        links_response = openai.ChatCompletion.create(
+            model='gpt-4',
+            temperature=0.2,
+            messages=[
+                {"role": "user", "content": "Return an array containing all the links in the following string, and add http or https if need be:\n"+text},
+                {"role":"assistant", "content": "Sure! Here's an array containing all the links in your message:\n"}
+            ])
+
+        links_response_string = links_response.choices[0].message.content
+
+        # parse the links from the responsestring as an array
+        links = ast.literal_eval(links_response_string)
+        print("################ links ############\n", links)
+
+        #if no links, return
+        if len(links) == 0:
+            return "I couldn't find any links in your message. Please try again."
+        
+        # Initialize an empty string to hold all the text
+        text_collection = ''    
+        # for each link
+        for link in links:
+                # Get the HTML of the page
+            response = requests.get(link)
+
+            # Parse the HTML with BeautifulSoup
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Find all paragraph tags
+            paragraphs = soup.find_all('p')
+
+            # use tiktoken to count the number of tokens
+            enc = tiktoken.encoding_for_model("gpt-4")
+            token_count = 0
+            page_text = ''
+
+            # For each paragraph, print the text and add it to text_collection
+            for p in paragraphs:
+                text = p.get_text()
+                page_text += text + '\n'  # Add a newline between paragraphs
+                print(text)
+                token_count += len(enc.encode(text))
+                print("################ token_count ############", token_count)
+                if token_count > 3500/len(links):
+                    print("################ token_count > 3500/len(links) ############", token_count > 3500/len(links))
+                    break
+
+            text_collection += page_text
+
+        # add the text to the prompt
+        prompt_messages = []
+        prompt_messages.append({"role": "user", "content": text_collection})
+
+        # append the message
+        prompt_messages.append({"role": "user", "content": text})
+
+        response = openai.ChatCompletion.create(
+            model='gpt-4',
+            temperature=0.2,
+            messages=prompt_messages
+        )
+
+        response_string = response.choices[0].message.content
+        print("################ response_string ############\n", response_string)
+
+        return response_string
 
 
 @slack_event_adapter.on('message')
@@ -295,7 +368,7 @@ def message(payload):
         
 
 # TEST
-# text = "@Cledara Bot i want to do a quarterly review of my software stack. what process should i follow?"
+# text = "@Cledara Bot go to the page frame.io and find the features?"
 # intent = understand_intent(text)
 # entities = extract_entities(text)
 # response = generate_response(intent,entities,text)

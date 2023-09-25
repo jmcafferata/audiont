@@ -361,14 +361,14 @@ def message(payload):
         
 
 # TEST
-text = "@Cledara Bot compare frame.io and monday.com"
-intent = understand_intent(text)
-entities = extract_entities(text)
-response = generate_response(intent,entities,text)
-print("response: ", response)
+# text = "@Cledara Bot compare frame.io and monday.com"
+# intent = understand_intent(text)
+# entities = extract_entities(text)
+# response = generate_response(intent,entities,text)
+# print("response: ", response)
 
 
 
-# if __name__ == "__main__":
-#     # app.run(debug=True)
-#     app.run(host='0.0.0.0', port=5020, debug=True)
+if __name__ == "__main__":
+    # app.run(debug=True)
+    app.run(host='0.0.0.0', port=5020, debug=True)

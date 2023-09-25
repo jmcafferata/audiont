@@ -293,33 +293,26 @@ You are Cledara Bot. You provide information about Cledara. If someone asks a qu
             # Parse the HTML with BeautifulSoup
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # Find all paragraph tags
-            paragraphs = soup.find_all('p')
+            # get page title
+            page_title = soup.title.string
 
-            # use tiktoken to count the number of tokens
-            enc = tiktoken.encoding_for_model("gpt-4")
-            token_count = 0
-            page_text = ''
 
-            # For each paragraph, print the text and add it to text_collection
-            for p in paragraphs:
-                text = p.get_text()
-                page_text += text + '\n'  # Add a newline between paragraphs
-                print(text)
-                token_count += len(enc.encode(text))
-                print("################ token_count ############", token_count)
-                if token_count > 3500/len(links):
-                    print("################ token_count > 3500/len(links) ############", token_count > 3500/len(links))
-                    break
+            # get text
+            page_text = soup.get_text()
 
+
+            # add the page title to the text collection
+            text_collection += page_title + '\n\n'
             text_collection += page_text
+
+        
 
         # add the text to the prompt
         prompt_messages = []
         prompt_messages.append({"role": "user", "content": text_collection})
 
         # append the message
-        prompt_messages.append({"role": "user", "content": text})
+        prompt_messages.append({"role": "user", "content":"Based on the previous text, answer the following prompt:\n"+ text})
 
         response = openai.ChatCompletion.create(
             model='gpt-4',
@@ -368,14 +361,14 @@ def message(payload):
         
 
 # TEST
-# text = "@Cledara Bot go to the page frame.io and find the features?"
-# intent = understand_intent(text)
-# entities = extract_entities(text)
-# response = generate_response(intent,entities,text)
-# print("response: ", response)
+text = "@Cledara Bot compare frame.io and monday.com"
+intent = understand_intent(text)
+entities = extract_entities(text)
+response = generate_response(intent,entities,text)
+print("response: ", response)
 
 
 
-if __name__ == "__main__":
-    # app.run(debug=True)
-    app.run(host='0.0.0.0', port=5020, debug=True)
+# if __name__ == "__main__":
+#     # app.run(debug=True)
+#     app.run(host='0.0.0.0', port=5020, debug=True)

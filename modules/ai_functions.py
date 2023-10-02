@@ -34,6 +34,9 @@ import shutil
 import random
 from modules.settings_system import get_settings, write_settings
 from modules.vectorize import split_text_into_segments, extract_text_from_pdf
+from modules.google_calendar import get_events,create_event
+from modules.google_calendar import check_auth
+from modules.google_calendar import get_auth_url
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
 openai.api_key = config.openai_api_key
@@ -166,6 +169,8 @@ async def understand_intent(update, message):
 available_functions=[
 {"function":"chat","default":"true","fallback":"true","description":"for chatting with the AI chatbot","example_user_message":"hola! todo bien?"},
 {"function":"docusearch","description":"for looking up relevant information in one of the documents, based on the available_documents","example_user_messages":["how to add an application in cledara","get me a customer story about finance","what can cledara do"]},
+{"function":"getevents","description":"for getting the user's next events","example_user_messages":["mostrame mi calendario","qué eventos tengo mañana?"},                     
+{"function":"newevent","description":"for creatint a google calendar event","example_user_messages":["agendar mañana a las 10am la depilación","nuevo evento el martes 18 a las 15 llamado cumple sofi"},                     
 
 ]
 
@@ -508,13 +513,11 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         prompt_messages.append({"role": "user", "content": new_vocabulary_text})
 
     ######################### CALENDAR #########################
-    elif intent.startswith('calendar'):
+    elif intent.startswith('getevents'):
 
         events = '' 
         await update.message.reply_text('📅Buscando en el calendario...')
-        from modules.google_calendar import get_events
-        from modules.google_calendar import check_auth
-        from modules.google_calendar import get_auth_url
+        
 
         # check if the user has authorized the app
         if not check_auth(update.message.from_user.id):
@@ -538,6 +541,66 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         response_string = response.choices[0].message.content
         print("################ response_string ############\n", response_string)
         await update.message.reply_text(response_string)
+
+    ######################### NEW EVENT #########################
+    elif intent.startswith('newevent'):
+        await update.message.reply_text('📅 Creando evento...')
+        # check if the user has authorized the app
+        if not check_auth(update.message.from_user.id):
+            # if not, send the auth url
+            await update.message.reply_text('🔐 Necesito que me autorices para acceder a tu calendario. Por favor, hacé click en el siguiente link y seguí las instrucciones:\n\n' + get_auth_url(update.message.from_user.id))
+            return
+        else:
+            # if yes, extract the event details from the message
+            event_details_response = openai.ChatCompletion.create(
+                model='gpt-4',
+                temperature=0.2,
+                messages=[
+                    {"role":"user","content":"Hoy es " + now.strftime("%d/%m/%Y") + ".\n"},
+                    {"role":"user","content":"""Create an event following this format: 
+{
+  'summary': 'Google I/O 2015',
+  'location': '800 Howard St., San Francisco, CA 94103',
+  'description': 'A chance to hear more about Google\'s developer products.',
+  'start': {
+    'dateTime': '2015-05-28T09:00:00-07:00',
+    'timeZone': 'America/Los_Angeles',
+  },
+  'end': {
+    'dateTime': '2015-05-28T17:00:00-07:00',
+    'timeZone': 'America/Los_Angeles',
+  },
+  'recurrence': [
+    'RRULE:FREQ=DAILY;COUNT=2'
+  ],
+  'attendees': [
+    {'email': 'lpage@example.com'},
+    {'email': 'sbrin@example.com'},
+  ],
+  'reminders': {
+    'useDefault': False,
+    'overrides': [
+      {'method': 'email', 'minutes': 24 * 60},
+      {'method': 'popup', 'minutes': 10},
+    ],
+  },
+}
+                     """},
+                    {"role":"user","content":"Extract the details from the following message:\n" + message},
+                    {"role":"assistant","content":"event="}
+                ])
+            event_details = event_details_response.choices[0].message.content
+            # check if it's a valid dictionary
+            try:
+                print("################ event_details ############\n", event_details)
+                # create the event
+                create_event(update.message.from_user.id, event_details)
+                await update.message.reply_text('📅 Evento creado!')
+            except Exception as e:
+                print("################ exception ############\n", e)
+                await update.message.reply_text('❌ Hubo un error creando el evento. Probá de nuevo.')
+
+
 
     for prompt_message in prompt_messages:
         # print the message
@@ -729,7 +792,7 @@ async def chat(update,message,model):
     print("intent: \n", intent)
 
     # TODO: get the entities from the message
-    entities = await extract_entities(update)
+    entities = await extract_entities(update,message)
 
     # perform the action
     await perform_action(intent,entities,message,update)

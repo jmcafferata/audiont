@@ -84,6 +84,6 @@ def split_text_into_segments(text: str,language: str) -> List[str]:
 import pandas as pd
 import os
 
-csv_file = 'data.csv'
-df = pd.read_csv(csv_file)
-print(df.head())
+# csv_file = 'data.csv'
+# df = pd.read_csv(csv_file)
+# print(df.head())

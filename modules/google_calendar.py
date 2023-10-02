@@ -81,3 +81,28 @@ def get_events(uid):
     except HttpError as err:
         print(err)
 
+def create_event(uid,event_object):
+    creds = None
+
+    uid = str(uid)
+
+    if os.path.exists('users/' + uid + '/token.json'):
+        creds = Credentials.from_authorized_user_file('users/' + uid + '/token.json', SCOPES)
+
+    try:
+        service = build('calendar', 'v3', credentials=creds)
+
+        now = dt.datetime.utcnow().isoformat() + 'Z'
+
+        event = service.events().insert(calendarId='primary', body=event_object).execute()
+
+        print('Event created: %s' % (event.get('htmlLink')))
+        return True
+    
+    except HttpError as err:
+        print(err)
+        return False
+        
+
+
+        

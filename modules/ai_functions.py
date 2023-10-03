@@ -111,7 +111,7 @@ async def get_json_top_entries(query, database_name, top_n=5,update=None):
 
     return related_data
 
-def get_top_entries(db, query, top_n=15):
+def get_top_entries(db, query, top_n=7):
 
     with open(db, 'rb') as f:
         csv_str = f.read()

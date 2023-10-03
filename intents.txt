@@ -7,5 +7,7 @@ available_functions=[
 {"function":"messagestore","description":"for logging messages","example_user_message":"anotar que un pancho cuesta cinco dólares"},
 {"function":"personality","description":"for changing the personality of the AI chatbot","example_user_message":"cambiá tu personalidad a la de un abogado"},
 {"function":"vocabulary","description":"for changing the vocabulary of the AI chatbot","example_user_message":"agregar las siguientes palabras al vocabulario: 'schadenfreude', 'watafak', 'papafrita'"},    
+{"function":"newevent","description":"for creatint a google calendar event","example_user_messages":["agendar mañana a las 10am la depilación","nuevo evento el martes 18 a las 15 llamado cumple sofi"},                     
+{"function":"getevents","description":"for getting the user's next events","example_user_messages":["mostrame mi calendario","qué eventos tengo mañana?"},                     
 
 ]

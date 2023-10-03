@@ -169,8 +169,8 @@ async def understand_intent(update, message):
 available_functions=[
 {"function":"chat","default":"true","fallback":"true","description":"for chatting with the AI chatbot","example_user_message":"hola! todo bien?"},
 {"function":"docusearch","description":"for looking up relevant information in one of the documents, based on the available_documents","example_user_messages":["how to add an application in cledara","get me a customer story about finance","what can cledara do"]},
-{"function":"getevents","description":"for getting the user's next events","example_user_messages":["mostrame mi calendario","qué eventos tengo mañana?"},                     
-{"function":"newevent","description":"for creatint a google calendar event","example_user_messages":["agendar mañana a las 10am la depilación","nuevo evento el martes 18 a las 15 llamado cumple sofi"},                     
+{"function":"personality","description":"for changing the personality of the AI chatbot","example_user_message":"cambiá tu personalidad a la de un abogado"},
+{"function":"vocabulary","description":"for changing the vocabulary of the AI chatbot","example_user_message":"agregar las siguientes palabras al vocabulario: 'schadenfreude', 'watafak', 'papafrita'"},    
 
 ]
 

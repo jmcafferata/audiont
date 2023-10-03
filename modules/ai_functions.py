@@ -797,6 +797,19 @@ async def chat(update,message,model):
     # perform the action
     await perform_action(intent,entities,message,update)
 
+    #check if full name is none
+    if update.message.from_user.full_name is None:
+        #get user id
+        full_name = "User ID: "+str(update.message.from_user.id)
+    else:
+        full_name = update.message.from_user.full_name
+    
+
+    message_vector = get_embedding(message, 'text-embedding-ada-002')
+    with open('db/messages.csv', 'a', encoding='utf-8') as f:
+        f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message+'|'+str(message_vector)+'\n')
+   
+
 
 async def secretary(update,message,context):
     now = datetime.now()

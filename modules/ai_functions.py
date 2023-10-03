@@ -137,7 +137,7 @@ def get_top_entries(db, query, top_n=15):
         if 'row_id' in row:
             del row['row_id']
         # Convert the row to a string and join the values using '|'
-        row_str = ' '.join(map(str, row.values))
+        row_str = '|'.join([str(x) for x in row.values])
         # Append the row string to 'similar_entries' followed by a newline character
         similar_entries += row_str + '\n'
 
@@ -212,7 +212,8 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         # CONFIG THE MODEL FOR CHAT
         personalidad = get_settings('personality', update.message.from_user.id)
         vocabulario = get_settings('vocabulary', update.message.from_user.id)
-        prompt_messages.append({"role": "system", "content": "Bot personality:\n"+ personalidad+'\n\n' + "Bot vocabulary:\n"+vocabulario})
+        similar_entries = get_top_entries('db/messages.csv',message)
+        prompt_messages.append({"role": "system", "content": "Bot personality:\n"+ personalidad+'\n\n' + "Bot vocabulary:\n"+vocabulario+'\n\n' + "Similar previous messages:\n"+similar_entries+'\n\n'+'Current time: '+now.strftime("%d/%m/%Y %H:%M:%S")})
 
         # add chat history to prompt
         chat_df = pd.read_csv('users/'+str(update.message.from_user.id)+'/chat.csv', sep='|', encoding='utf-8', escapechar='\\')

@@ -470,24 +470,9 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
     
     ######################### PERSONALITY #########################
     elif intent.startswith('personality'):
-        await update.message.reply_text('🧠🤯 Cambiando personalidad del bot...')
-        # get the current personality from the user settings
-        current_personality = get_settings("personality", update.message.from_user.id)
-        personality_response = openai.ChatCompletion.create(
-            model="gpt-4",
-            temperature=0.2,
-            messages=[
-                {"role": "user", "content": message + "\nCurrent personality: " + current_personality + "\n\nReescribir la personalidad en base al pedido.\n\n"},
-                {"role": "assistant", "content": "Nueva personalidad: "}
-            ])
+        await update.message.reply_text('🧠🤯 ¡Listardium! Nueva personalidad adquirida.')
         
-        new_personality_text = personality_response.choices[0].message.content
-
-        # update the user settings with the new personality
-        write_settings("personality", new_personality_text, update.message.from_user.id)
-        await update.message.reply_text("👀😵‍💫 Esta va a ser mi nueva personalidad:")
-        await update.message.reply_text(new_personality_text)
-        prompt_messages.append({"role": "user", "content": new_personality_text})
+        write_settings("personality", message, update.message.from_user.id)
 
     ############################## VOCABULARY ##############################
     elif intent.startswith('vocabulary'):

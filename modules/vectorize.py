@@ -84,11 +84,3 @@ def split_text_into_segments(text: str,language: str) -> List[str]:
 import pandas as pd
 import os
 
-# get the pdf file in the directory and convert it to text
-file = 'Mediación Cultural en Museos.pdf'
-text = extract_text_from_pdf(file)
-# split the text into segments
-segments = split_text_into_segments(text,'es')
-# save the segments into a csv file
-df = pd.DataFrame(segments)
-df.to_csv('Mediación Cultural en Museos.csv',index=False,header=False)

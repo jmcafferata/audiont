@@ -274,6 +274,9 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
 
         memory_response_string = memory_response.choices[0].message.content
 
+        print('############ MEMORY RESPONSE ############')
+        print(memory_response_string)
+
         #save the current user data to backup.txt
         with open('users/'+str(update.message.from_user.id)+'/backup.txt', 'w', encoding='utf-8') as f:
             f.write(user_data)

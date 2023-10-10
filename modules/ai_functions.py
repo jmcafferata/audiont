@@ -196,6 +196,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
     now = datetime.now(timezone)
  
     prompt_messages = []
+    memory_prompt_messages = []
 
     model = get_settings('GPTversion', update.message.from_user.id)
 
@@ -205,27 +206,47 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         typing_message = await update.message.reply_text('Pensando antes de hablar...')
        
         
-        # # check if chat.csv exists in users/uid folder
-        # if not os.path.exists('users/'+str(update.message.from_user.id)+'/chat.csv'):
-        # # create chat.csv
-        #     with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'w', encoding='utf-8') as f: 
-        #         f.write('date|role|content\n')
+        # check if chat.csv exists in users/uid folder
+        if not os.path.exists('users/'+str(update.message.from_user.id)+'/chat.csv'):
+        # create chat.csv
+            with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'w', encoding='utf-8') as f: 
+                f.write('date|role|content\n')
 
         # CONFIG THE MODEL FOR CHAT
         # personalidad = get_settings('personality', update.message.from_user.id)
         # vocabulario = get_settings('vocabulary', update.message.from_user.id)
         # similar_entries = get_top_entries('db/messages.csv',message)
 
+
         prompt_messages.append({"role": "system", "content": 'Current time: '+now.strftime("%d/%m/%Y %H:%M:%S")})
+        memory_prompt_messages.append({"role": "system", "content": 'Current time: '+now.strftime("%d/%m/%Y %H:%M:%S")})
+        
+        prompt_messages.append({"role": "system", "content": "you are an ai chatbot. you chat with users. you also have a memory module that lets you store and retrieve user data (that's coded outside the chatbot flow)."})
+        memory_prompt_messages.append({"role": "system", "content": "you are an ai chatbot's memory module. you update user data.\n\nuser data:\n"})
+        user_data_txt_file = 'users/'+str(update.message.from_user.id)+'/user_data.txt'
+        if not os.path.exists(user_data_txt_file):
+            with open(user_data_txt_file, 'w', encoding='utf-8') as f:
+                f.write('')
+            
+        with open(user_data_txt_file, 'r', encoding='utf-8') as f:
+            user_data = f.read()
+        prompt_messages.append({"role": "user", "content": user_data})
+        memory_prompt_messages.append({"role": "user", "content": user_data})
+        
+        memory_prompt_messages.append({"role": "system", "content": "when the user sends you a message, respond with the user data, whether it's updated or stays the same. don't change anything except what's asked from the user"})
 
         # add chat history to prompt
         chat_df = pd.read_csv('users/'+str(update.message.from_user.id)+'/chat.csv', sep='|', encoding='utf-8', escapechar='\\')
         chat_df = chat_df.tail(50)
         for index, row in chat_df.iterrows():
             prompt_messages.append({"role": row['role'], "content": row['content']})
-        
+            memory_prompt_messages.append({"role": row['role'], "content": row['content']})
+
         # add user message to prompt
         prompt_messages.append({"role": "user", "content": message})
+
+        memory_prompt_messages.append({"role": "user", "content": message})
+        memory_prompt_messages.append({"role": "assistant", "content": "user data:\n"})
 
         response = openai.ChatCompletion.create(
             model='gpt-4',	
@@ -246,6 +267,24 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         print('############ CHAT RESPONSE ############')
         print(response_string)
         await typing_message.edit_text(response_string)
+
+        memory_response = openai.ChatCompletion.create(
+            model='gpt-4',	
+            temperature=0.5,
+            messages=memory_prompt_messages
+        )
+
+        memory_response_string = memory_response.choices[0].message.content
+
+        #save the current user data to backup.txt
+        with open('users/'+str(update.message.from_user.id)+'/backup.txt', 'w', encoding='utf-8') as f:
+            f.write(user_data)
+
+        #save the current user data to user_data.txt
+        with open('users/'+str(update.message.from_user.id)+'/user_data.txt', 'w', encoding='utf-8') as f:
+            f.write(memory_response_string)
+
+
 
     ######################### CREATE AGENT #########################
     elif intent.startswith('create_agent'):

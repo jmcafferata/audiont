@@ -169,8 +169,7 @@ async def understand_intent(update, message):
 available_functions=[
 {"function":"chat","default":"true","fallback":"true","description":"for chatting with the AI chatbot","example_user_message":"hola! todo bien?"},
 {"function":"docusearch","description":"for looking up relevant information in one of the documents, based on the available_documents","example_user_messages":["how to add an application in cledara","get me a customer story about finance","what can cledara do"]},
-{"function":"personality","description":"for changing the personality of the AI chatbot","example_user_message":"cambiá tu personalidad a la de un abogado"},
-{"function":"vocabulary","description":"for changing the vocabulary of the AI chatbot","example_user_message":"agregar las siguientes palabras al vocabulario: 'schadenfreude', 'watafak', 'papafrita'"},    
+{"function":"scrape","description":"for scraping the internet for additional data","example_user_message":"buscar en cledara.com los features de Cledara"},
 
 ]
 
@@ -202,22 +201,26 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
 
     ######################### CHAT #########################
     if intent.startswith('chat'):
+
         typing_message = await update.message.reply_text('Pensando antes de hablar...')
-        # check if chat.csv exists in users/uid folder
-        if not os.path.exists('users/'+str(update.message.from_user.id)+'/chat.csv'):
-        # create chat.csv
-            with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'w', encoding='utf-8') as f: 
-                f.write('date|role|content\n')
+       
         
+        # # check if chat.csv exists in users/uid folder
+        # if not os.path.exists('users/'+str(update.message.from_user.id)+'/chat.csv'):
+        # # create chat.csv
+        #     with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'w', encoding='utf-8') as f: 
+        #         f.write('date|role|content\n')
+
         # CONFIG THE MODEL FOR CHAT
-        personalidad = get_settings('personality', update.message.from_user.id)
-        vocabulario = get_settings('vocabulary', update.message.from_user.id)
-        similar_entries = get_top_entries('db/messages.csv',message)
-        prompt_messages.append({"role": "system", "content": "Bot personality:\n"+ personalidad+'\n\n' + "Bot vocabulary:\n"+vocabulario+'\n\n' + "Similar previous messages:\n"+similar_entries+'\n\n'+'Current time: '+now.strftime("%d/%m/%Y %H:%M:%S")})
+        # personalidad = get_settings('personality', update.message.from_user.id)
+        # vocabulario = get_settings('vocabulary', update.message.from_user.id)
+        # similar_entries = get_top_entries('db/messages.csv',message)
+
+        prompt_messages.append({"role": "system", "content": 'Current time: '+now.strftime("%d/%m/%Y %H:%M:%S")})
 
         # add chat history to prompt
         chat_df = pd.read_csv('users/'+str(update.message.from_user.id)+'/chat.csv', sep='|', encoding='utf-8', escapechar='\\')
-        chat_df = chat_df.tail(15)
+        chat_df = chat_df.tail(50)
         for index, row in chat_df.iterrows():
             prompt_messages.append({"role": row['role'], "content": row['content']})
         
@@ -225,18 +228,18 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         prompt_messages.append({"role": "user", "content": message})
 
         response = openai.ChatCompletion.create(
-            model=model,
+            model='gpt-4',	
             temperature=0.5,
             messages=prompt_messages
         )
 
         response_string = response.choices[0].message.content
 
-        # store the user message on chat.csv but replace new lines with \n
+        # store the user message on the agent's csv
         with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'a', encoding='utf-8') as f:
             f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|user|'+message.replace('\n', ' ').replace('|','-')+'\n')
         
-
+        # store the response on the agent's csv
         with open('users/'+str(update.message.from_user.id)+'/chat.csv', 'a', encoding='utf-8') as f:
             f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|assistant|' + response_string.replace('\n', ' ').replace('|','-')+ '\n')
 
@@ -244,6 +247,31 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         print(response_string)
         await typing_message.edit_text(response_string)
 
+    ######################### CREATE AGENT #########################
+    elif intent.startswith('create_agent'):
+        await update.message.reply_text('🤖 Creando agente...')
+
+        # create the agents folder if it doesn't exist
+        agents_folder = 'users/'+str(update.message.from_user.id)+'/agents'
+        if not os.path.exists(agents_folder):
+            os.makedirs(agents_folder)
+
+        # get the agent name from the message
+        agent_name_response = openai.ChatCompletion.create(
+            model='gpt-4',
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": "Based on the user message, you have to create an agent. What's the name of the agent? use no quotes. make it a clear name like agent_name=tareas or agent_name=ventas or agent_name=compras"},
+                {"role": "user", "content": message},
+                {"role": "assistant", "content": "agent_name="}
+            ]
+        )
+        agent_name = agent_name_response.choices[0].message.content
+        # create the agent csv file
+        with open('users/'+str(update.message.from_user.id)+'/agents/'+agent_name+'.csv', 'w', encoding='utf-8') as f:
+            f.write('date|role|content\n')
+        await update.message.reply_text('🤖 Agente creado!')
+    
     ######################### DOCUSEARCH #########################
     elif intent.startswith('docusearch'):
         await update.message.reply_text('🔭Buscando en documentos...')
@@ -586,10 +614,9 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
                 print("################ exception ############\n", e)
                 await update.message.reply_text('❌ Hubo un error creando el evento. Probá de nuevo.')
 
-
-
     for prompt_message in prompt_messages:
         # print the message
+        print('############ prompt_message ############')
         print(prompt_message)
     return prompt_messages
     

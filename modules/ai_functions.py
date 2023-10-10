@@ -222,7 +222,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         memory_prompt_messages.append({"role": "system", "content": 'Current time: '+now.strftime("%d/%m/%Y %H:%M:%S")})
         
         prompt_messages.append({"role": "system", "content": "you are an ai chatbot. you chat with users. you also have a memory module that lets you store and retrieve user data (that's coded outside the chatbot flow)."})
-        memory_prompt_messages.append({"role": "system", "content": "you are an ai chatbot's memory module. you update user data.\n\nuser data:\n"})
+        memory_prompt_messages.append({"role": "system", "content": "you are an ai chatbot's memory module. you update user data according to the user messages. you always return the whole updated user data. the external chat module will talk to the user.\n\nuser data:\n"})
         user_data_txt_file = 'users/'+str(update.message.from_user.id)+'/user_data.txt'
         if not os.path.exists(user_data_txt_file):
             with open(user_data_txt_file, 'w', encoding='utf-8') as f:
@@ -233,8 +233,6 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         prompt_messages.append({"role": "user", "content": user_data})
         memory_prompt_messages.append({"role": "user", "content": user_data})
         
-        memory_prompt_messages.append({"role": "system", "content": "when the user sends you a message, respond with the user data, whether it's updated or stays the same. don't change anything except what's asked from the user"})
-
         # add chat history to prompt
         chat_df = pd.read_csv('users/'+str(update.message.from_user.id)+'/chat.csv', sep='|', encoding='utf-8', escapechar='\\')
         chat_df = chat_df.tail(50)
@@ -246,7 +244,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         prompt_messages.append({"role": "user", "content": message})
 
         memory_prompt_messages.append({"role": "user", "content": message})
-        memory_prompt_messages.append({"role": "assistant", "content": "user data:\n"})
+        memory_prompt_messages.append({"role": "assistant", "content": "updated user data:\n"})
 
         response = openai.ChatCompletion.create(
             model='gpt-4',	
@@ -653,10 +651,6 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
                 print("################ exception ############\n", e)
                 await update.message.reply_text('❌ Hubo un error creando el evento. Probá de nuevo.')
 
-    for prompt_message in prompt_messages:
-        # print the message
-        print('############ prompt_message ############')
-        print(prompt_message)
     return prompt_messages
     
 def ensure_csv_extension(database_name):

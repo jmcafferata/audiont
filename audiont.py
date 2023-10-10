@@ -50,7 +50,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     write_settings("uid", str(update.message.from_user.id),update.message.from_user.id)
     # send a message // enviar un mensaje
     await update.message.reply_text(
-        config.start_message
+        config.start_message+' Tu número de usuario es ' + str(update.message.from_user.id)
     )
     # check if user has folder in users/ folder. if not, create it
     check_user_folder(update.message.from_user.id)

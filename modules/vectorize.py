@@ -72,18 +72,23 @@ def split_text_into_segments(text: str,language: str) -> List[str]:
   if language == "en":
     nlp = spacy.load("en_core_web_sm")
   elif language == "es":
-    nlp = spacy.load("es_core_news_sm")
+    nlp = spacy.load("es_dep_news_trf")
 
   # text_no_stop_words = remove_stop_words(text,nlp)
   # print(len(text_no_stop_words))
   sentences = split_sentences(text,nlp)
   print('sentences: ',len(sentences))
-  return group_sentences_semantically(sentences, 0.3,nlp)
+  return group_sentences_semantically(sentences, 0.6,nlp)
 
 
 import pandas as pd
 import os
 
-# csv_file = 'data.csv'
-# df = pd.read_csv(csv_file)
-# print(df.head())
+# get the pdf file in the directory and convert it to text
+file = 'Mediación Cultural en Museos.pdf'
+text = extract_text_from_pdf(file)
+# split the text into segments
+segments = split_text_into_segments(text,'es')
+# save the segments into a csv file
+df = pd.DataFrame(segments)
+df.to_csv('Mediación Cultural en Museos.csv',index=False,header=False)

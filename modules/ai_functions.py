@@ -930,9 +930,10 @@ def read_files(input_folder):
                         for page_num in range(len(pdf.pages)):
                             page = pdf.pages[page_num]
                             text = page.extract_text()
-                            from vectorize import split_text_into_segments
-                            segments = split_text_into_segments(text,language='es')
-                            content.append((text, file, page_num,metadata))
+                            # split text in chunks of max 500 characters
+                            text_chunks = split_text(text, 500)
+                            for text_chunk in text_chunks:
+                                content.append((text_chunk, file, page_num,metadata))
                             print(content)
                 elif file.endswith('.html'):
                     with open(os.path.join(root, file), 'r', encoding='utf-8') as f:

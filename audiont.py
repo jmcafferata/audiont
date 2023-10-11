@@ -332,6 +332,10 @@ async def vectorizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     ))
 
+async def ver_datos(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    #reply with the data inside user/user_data.txt
+    with open("users/"+str(update.message.from_user.id)+"/user_data.txt", "r",encoding="utf-8") as f:
+        await update.message.reply_text(f.read())
 
 async def entrenar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # clean the pending_pcp_list
@@ -417,6 +421,10 @@ if __name__ == '__main__':
     # /vectorizar command
     vectorizar_handler = CommandHandler('vectorizar', vectorizar)
     application.add_handler(vectorizar_handler)
+
+    # /ver_datos command
+    ver_datos_handler = CommandHandler('ver_datos',ver_datos)
+    application.add_handler(ver_datos_handler)
 
     # /test command
     flask_test_handler = CommandHandler('flask_test', flask_test)

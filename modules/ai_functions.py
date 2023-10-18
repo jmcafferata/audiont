@@ -965,7 +965,7 @@ def read_files(input_folder):
                     with pdfplumber.open(os.path.join(root, file)) as pdf:
                         for page_num in range(len(pdf.pages)):
                             page = pdf.pages[page_num]
-                            text = page.extract_text()
+                            text = page.extract_text(x_tolerance=2, y_tolerance=2)
                             # split text in chunks of max 500 characters
                             text_chunks = split_text(text, 500)
                             for text_chunk in text_chunks:

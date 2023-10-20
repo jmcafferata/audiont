@@ -132,6 +132,6 @@ def vectorize_chunks(text_chunks, metadata,file):
 
     return vectorized_data
 
-folder = os.getcwd() + '/modules/vectorize_tests'
-print(folder)
-vectorize(folder)
+# folder = os.getcwd() + '/modules/vectorize_tests'
+# print(folder)
+# vectorize(folder)

@@ -153,7 +153,7 @@ def upload_file(user_id):
 app = Flask(__name__)
 app.register_blueprint(bp, url_prefix='/audiont')
 # uploads folder
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = 'users'
 
 
 if __name__ == '__main__':

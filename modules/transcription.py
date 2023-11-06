@@ -41,7 +41,7 @@ def transcribe(audio_file,openai_api_key):
             chunk = os.path.join(temp_dir, random_number, chunk)
             with open(chunk, "rb") as file:
                 transcription_object = openai.Audio.transcribe(
-                    "whisper-1", file, language='es', prompt="Esto es una nota de voz. Transcribir respetando los signos de puntuación.",
+                    "whisper-1", file
                 )
                 print("Transcription:\n" + transcription_object["text"])
                 transcription_text += transcription_object["text"]

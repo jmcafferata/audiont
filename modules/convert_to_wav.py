@@ -5,8 +5,6 @@ import openai
 import random
 import pandas as pd
 from ast import literal_eval
-from openai.embeddings_utils import get_embedding
-from openai.embeddings_utils import cosine_similarity
 import numpy as np
 from io import StringIO
 

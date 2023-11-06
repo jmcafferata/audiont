@@ -7,8 +7,6 @@ import json
 from pathlib import Path # library used to handle file paths // librería usada para manejar rutas de archivos
 import config as config # import the config file // importar el archivo de configuración
 import pandas as pd # library used to handle dataframes // librería usada para manejar dataframes
-from openai.embeddings_utils import get_embedding
-from openai.embeddings_utils import cosine_similarity
 import numpy as np
 from ast import literal_eval
 from datetime import datetime
@@ -37,6 +35,8 @@ from modules.vectorize import split_text_into_segments, extract_text_from_pdf
 from modules.google_calendar import get_events,create_event
 from modules.google_calendar import check_auth
 from modules.google_calendar import get_auth_url
+
+from sklearn.metrics.pairwise import cosine_similarity
 
 # set the OpenAI API key, so the code can access the API // establecer la clave de la API de OpenAI, para que el código pueda acceder a la API
 openai.api_key = config.openai_api_key
@@ -73,7 +73,7 @@ async def get_json_top_entries(query, database_name, top_n=5,update=None):
     mensajes_sim = df[['filename','metadata', 'text_chunk', 'embedding', 'original_index']].copy()
     print('mensajes_sim: ', mensajes_sim)
 
-    message_vector = get_embedding(query, 'text-embedding-ada-002')
+    message_vector = openai.embeddings.create(query, 'text-embedding-ada-002')
 
     # Calculate cosine similarity between the message vector and the vectors in the output.json
     mensajes_sim['similarity'] = mensajes_sim['embedding'].apply(lambda x: check_and_compute_cosine_similarity(x, message_vector))
@@ -116,7 +116,7 @@ def get_top_entries(db, query, top_n=7):
     with open(db, 'rb') as f:
         csv_str = f.read()
     entries_df = pd.read_csv(StringIO(csv_str.decode('utf-8')), sep='|', encoding='utf-8', escapechar='\\')
-    query_vector = get_embedding(query, 'text-embedding-ada-002')
+    query_vector = openai.embeddings.create(query, 'text-embedding-ada-002')
     entries_df['similarity'] = entries_df['embedding'].apply(lambda x: check_and_compute_cosine_similarity(x, query_vector))
     # sort by similarity
     entries_df = entries_df.sort_values(by=['similarity'], ascending=False)
@@ -151,7 +151,7 @@ async def understand_intent(update, message):
     if update != None:
         model = get_settings('GPTversion', update.message.from_user.id)
     else:
-        model = 'gpt-4-1106-preview-1106-preview'
+        model = 'gpt-4-1106-preview'
 
     # get global json documents from the db folder only if they are JSONs
     global_jsons = [f for f in os.listdir('db') if f.endswith('.json')]
@@ -198,7 +198,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
     prompt_messages = []
     memory_prompt_messages = []
 
-    model = get_settings('GPTversion', update.message.from_user.id)
+    model = 'gpt-4-1106-preview'
 
     ######################### CHAT #########################
     if intent.startswith('chat'):
@@ -247,7 +247,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         memory_prompt_messages.append({"role": "assistant", "content": "updated user data:\n"})
 
         response = openai.ChatCompletion.create(
-            model='gpt-4-1106-preview-1106-preview',	
+            model='gpt-4-1106-preview',	
             temperature=0.5,
             messages=prompt_messages
         )
@@ -267,7 +267,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         await typing_message.edit_text(response_string)
 
         memory_response = openai.ChatCompletion.create(
-            model='gpt-4-1106-preview-1106-preview',	
+            model='gpt-4-1106-preview',	
             temperature=0.5,
             messages=memory_prompt_messages
         )
@@ -385,7 +385,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
                 file = file + '.json'
             # if file is json
             if file.endswith('.json'):
-                top_n = round(7/len(docusearch_file))
+                top_n = round(20/len(docusearch_file))
                 similar_entries = await get_json_top_entries(query, file, top_n,update)
                 final_similar_entries += similar_entries
 
@@ -506,7 +506,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         
         #embed and store the message in users/userid/messages.csv
 
-        message_vector = get_embedding(message, 'text-embedding-ada-002')
+        message_vector = openai.embeddings.create(message, 'text-embedding-ada-002')
         
         #check if csv exists. if not, create it
         if not os.path.exists('users/'+str(update.message.from_user.id)+'/messages.csv'):
@@ -675,6 +675,8 @@ def read_data_from_csv(key: str, filename: str) -> dict:
     return None
 
 def check_and_compute_cosine_similarity(x, message_vector):
+    import numpy as np
+    from ast import literal_eval
     try:
         x = np.array(literal_eval(x), dtype=np.float64)  # Convert x to float64
     except ValueError:
@@ -854,7 +856,7 @@ async def chat(update,message,model):
         full_name = update.message.from_user.full_name
     
 
-    message_vector = get_embedding(message, 'text-embedding-ada-002')
+    message_vector = openai.embeddings.create(message, 'text-embedding-ada-002')
     with open('db/messages.csv', 'a', encoding='utf-8') as f:
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message+'|'+str(message_vector)+'\n')
    
@@ -878,7 +880,7 @@ async def secretary(update,message,context):
         full_name = update.message.from_user.full_name
     
     #embed and store the message in db/messages.csv
-    message_vector = get_embedding(message, 'text-embedding-ada-002')
+    message_vector = openai.embeddings.create(message, 'text-embedding-ada-002')
     with open('db/messages.csv', 'a', encoding='utf-8') as f:
         f.write(now.strftime("%d/%m/%Y %H:%M:%S")+'|'+full_name+'|'+message+'|'+str(message_vector)+'\n')
     
@@ -1010,7 +1012,7 @@ def vectorize_chunks(text_chunks, metadata,file):
 
     for chunk in text_chunks:
         print('Progress: {}/{}'.format(counter, counter_end))
-        embedding = get_embedding(chunk,"text-embedding-ada-002")
+        embedding = openai.embeddings.create(chunk,"text-embedding-ada-002")
         vectorized_data.append({
             'filename': file,
             'metadata': metadata,

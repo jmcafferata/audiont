@@ -151,7 +151,7 @@ async def understand_intent(update, message):
     if update != None:
         model = get_settings('GPTversion', update.message.from_user.id)
     else:
-        model = 'gpt-4-1106-preview-1106-preview'
+        model = 'gpt-4-1106-preview'
 
     # get global json documents from the db folder only if they are JSONs
     global_jsons = [f for f in os.listdir('db') if f.endswith('.json')]
@@ -247,7 +247,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         memory_prompt_messages.append({"role": "assistant", "content": "updated user data:\n"})
 
         response = openai.ChatCompletion.create(
-            model='gpt-4-1106-preview-1106-preview',	
+            model='gpt-4-1106-preview',	
             temperature=0.5,
             messages=prompt_messages
         )
@@ -267,7 +267,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         await typing_message.edit_text(response_string)
 
         memory_response = openai.ChatCompletion.create(
-            model='gpt-4-1106-preview-1106-preview',	
+            model='gpt-4-1106-preview',	
             temperature=0.5,
             messages=memory_prompt_messages
         )
@@ -385,7 +385,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
                 file = file + '.json'
             # if file is json
             if file.endswith('.json'):
-                top_n = round(7/len(docusearch_file))
+                top_n = round(20/len(docusearch_file))
                 similar_entries = await get_json_top_entries(query, file, top_n,update)
                 final_similar_entries += similar_entries
 

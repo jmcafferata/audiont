@@ -45,8 +45,8 @@ openai.api_key = config.openai_api_key
 ################### AI FUNCTIONS ############################
 
 async def get_response_cost(prompt,completion,model,update):
-    if model == "gpt-4":
-        enc = tiktoken.encoding_for_model("gpt-4")
+    if model == "gpt-4-1106-preview":
+        enc = tiktoken.encoding_for_model("gpt-4-1106-preview")
         num_tokens_prompt = len(enc.encode(str(prompt)))
         num_tokens_completion = len(enc.encode(str(completion.choices[0].message.content)))
         await update.message.reply_text('Enviando $'+str(round((num_tokens_prompt*0.03+num_tokens_completion*0.06)/1000, 2))+' a OpenAI...')
@@ -151,7 +151,7 @@ async def understand_intent(update, message):
     if update != None:
         model = get_settings('GPTversion', update.message.from_user.id)
     else:
-        model = 'gpt-4'
+        model = 'gpt-4-1106-preview-1106-preview'
 
     # get global json documents from the db folder only if they are JSONs
     global_jsons = [f for f in os.listdir('db') if f.endswith('.json')]
@@ -247,7 +247,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         memory_prompt_messages.append({"role": "assistant", "content": "updated user data:\n"})
 
         response = openai.ChatCompletion.create(
-            model='gpt-4',	
+            model='gpt-4-1106-preview-1106-preview',	
             temperature=0.5,
             messages=prompt_messages
         )
@@ -267,7 +267,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         await typing_message.edit_text(response_string)
 
         memory_response = openai.ChatCompletion.create(
-            model='gpt-4',	
+            model='gpt-4-1106-preview-1106-preview',	
             temperature=0.5,
             messages=memory_prompt_messages
         )
@@ -298,7 +298,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
 
         # get the agent name from the message
         agent_name_response = openai.ChatCompletion.create(
-            model='gpt-4',
+            model='gpt-4-1106-preview',
             temperature=0.2,
             messages=[
                 {"role": "system", "content": "Based on the user message, you have to create an agent. What's the name of the agent? use no quotes. make it a clear name like agent_name=tareas or agent_name=ventas or agent_name=compras"},
@@ -451,7 +451,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
             paragraphs = soup.find_all('p')
 
             # use tiktoken to count the number of tokens
-            enc = tiktoken.encoding_for_model("gpt-4")
+            enc = tiktoken.encoding_for_model("gpt-4-1106-preview")
             token_count = 0
             page_text = ''
 
@@ -607,7 +607,7 @@ async def perform_action(intent, entities, message,update,platform='telegram'):
         else:
             # if yes, extract the event details from the message
             event_details_response = openai.ChatCompletion.create(
-                model='gpt-4',
+                model='gpt-4-1106-preview',
                 temperature=0.2,
                 messages=[
                     {"role":"user","content":"Hoy es " + now.strftime("%d/%m/%Y") + ".\n"},
@@ -906,7 +906,7 @@ async def secretary(update,message,context):
     prompt_messages.append({"role": "user", "content": message})
 
     response = openai.ChatCompletion.create(
-        model='gpt-4',
+        model='gpt-4-1106-preview',
         temperature=0.5,
         messages=prompt_messages
     )

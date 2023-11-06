@@ -275,7 +275,7 @@ async def chat4(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Data: ['explain', 'green', 'hydrogen', 'news', 'in', 'a', 'few', 'steps'] make them a string
     try:
-        write_settings(key="GPTversion", value="gpt-4", uid=update.message.from_user.id)
+        write_settings(key="GPTversion", value="gpt-4-1106-preview", uid=update.message.from_user.id)
         await update.message.reply_text("Estás usando ChatGPT 4 (es un poco más caro, no te zarpes🥲)")
 
     except Exception as e:

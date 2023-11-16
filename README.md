@@ -1,5 +1,5 @@
 # Audion't
-Un bot de Telegram que transcribe audios y genera un resumen y una respuesta.
+Un bot de WhatsApp, Telegram y Slack que transcribe audios y genera un resumen y una respuesta.
 
 ## Configuración
 
